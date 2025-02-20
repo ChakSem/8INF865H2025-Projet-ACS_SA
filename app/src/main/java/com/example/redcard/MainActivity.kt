@@ -3,45 +3,45 @@ package com.example.redcard
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.redcard.ui.theme.RedCardTheme
+import androidx.navigation.NavController
+import androidx.navigation.compose.*
+import com.example.redcard.data.DataStoreManager
+import com.example.redcard.ui.ConfigurationScreen
+import com.example.redcard.ui.GeneralSettingScreen
+import com.example.redcard.ui.HomeScreen
+import com.example.redcard.ui.StartingPage
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            RedCardTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            AppNavigation()
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun AppNavigation() {
+    val navController = rememberNavController()
+    val context = LocalContext.current // Récupération du contexte
+    val dataStoreManager = DataStoreManager(context) // Création de l'instance DataStoreManager
+
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") { HomeScreen(navController) }
+        composable("startingPage") { StartingPage(navController) }
+        composable("gameConfiguration") { ConfigurationScreen(navController, context) } // Correction ici
+        composable("generalSettings") { GeneralSettingScreen(navController, dataStoreManager) } // Correction ici
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    RedCardTheme {
-        Greeting("Android")
-    }
+fun HomeScreenPreview() {
+    HomeScreen(navController = rememberNavController(), onSettingsClick = {})
 }
