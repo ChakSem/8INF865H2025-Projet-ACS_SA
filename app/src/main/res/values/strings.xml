@@ -1,3 +1,24 @@
 <resources>
-    <string name="app_name">RedCard</string>
+    <!-- App Name -->
+    <string name="app_name">Red Card</string>
+
+    <!-- Texte de l'écran d'accueil -->
+    <string name="press_to_continue">Appuyer pour continuer</string>
+    <string name="settings">Paramètres</string>
+    <string name="change_language">Changer de langue</string>
+    <string name="app_logo">Logo de l application</string>
+
+
+    <!-- Langues -->
+    <string name="language_french">Français</string>
+    <string name="language_english">Anglais</string>
+
+    <string name="logo_description">Logo principal</string>
+    <string name="icon_description1">Icône 1</string>
+    <string name="icon_description2">Icône 2</string>
+    <string name="gif_description">GIF animé</string>
+    <string name="logo_description2">Logo secondaire</string>
+    <string name="icon_description3">Icône 3</string>
+
+
 </resources>
