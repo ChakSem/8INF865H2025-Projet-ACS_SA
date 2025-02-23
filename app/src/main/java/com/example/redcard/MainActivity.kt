@@ -12,9 +12,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.ui.ChoosePlayerBallScreen
 import com.example.redcard.ui.ConfigurationScreen
+import com.example.redcard.ui.GameIntroductionScreen
 import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
+import com.example.redcard.ui.PlayerSetupScreen
 import com.example.redcard.ui.StartingPage
 
 class MainActivity : ComponentActivity() {
@@ -34,9 +37,17 @@ fun AppNavigation() {
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
+        //GameIntroductionScreen
         composable("startingPage") { StartingPage(navController) }
-        composable("gameConfiguration") { ConfigurationScreen(navController, context) } // Correction ici
-        composable("generalSettings") { GeneralSettingScreen(navController, dataStoreManager) } // Correction ici
+        composable("gameConfiguration") { ConfigurationScreen(navController, context) }
+        composable("generalSettings") { GeneralSettingScreen(navController, dataStoreManager) }
+        composable("GameIntroductionScreen") { GameIntroductionScreen(navController) }
+        composable("ChoosePlayerBallScreen") {
+            ChoosePlayerBallScreen(navController, dataStoreManager)
+        }
+        composable("PlayerSetupScreen") {
+            PlayerSetupScreen(navController, dataStoreManager)
+        }
     }
 }
 
