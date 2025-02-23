@@ -80,13 +80,14 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.navigation:navigation-compose:2.7.4")
-    implementation ("androidx.annotation:annotation:1.3.0")
+    implementation("androidx.annotation:annotation:1.3.0")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("com.google.accompanist:accompanist-pager:0.30.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation("androidx.compose.material:material-icons-extended:1.0.5")
 
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
