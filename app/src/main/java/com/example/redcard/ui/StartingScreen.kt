@@ -62,7 +62,7 @@ fun StartingPage(navController: NavController) {
                     .size(40.dp)
                     .clickable {
                         //Mettre la redirection vers le tutoriel apres
-                        navController.navigate("home") {
+                        navController.navigate("tutorialSwipeableScreen") {
                             popUpTo("home") { inclusive = true }
                         }
                     }

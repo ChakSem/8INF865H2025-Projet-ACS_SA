@@ -16,6 +16,7 @@ import com.example.redcard.ui.ConfigurationScreen
 import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
 import com.example.redcard.ui.StartingPage
+import com.example.redcard.ui.tutorial.TutorialSwipeableScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +38,8 @@ fun AppNavigation() {
         composable("startingPage") { StartingPage(navController) }
         composable("gameConfiguration") { ConfigurationScreen(navController, context) } // Correction ici
         composable("generalSettings") { GeneralSettingScreen(navController, dataStoreManager) } // Correction ici
+        composable("tutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
+
     }
 }
 
