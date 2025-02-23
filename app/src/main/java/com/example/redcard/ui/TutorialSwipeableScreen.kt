@@ -1,4 +1,4 @@
-package com.example.redcard.ui.tutorial
+package com.example.redcard.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
