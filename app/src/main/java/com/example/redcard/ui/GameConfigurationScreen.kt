@@ -138,13 +138,8 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
         // Bouton Commencer
         Button(
             onClick = {
-<<<<<<< HEAD
                 navController.navigate("GameIntroductionScreen") {
                     popUpTo("GameIntroductionScreen") { inclusive = true }
-=======
-                navController.navigate("home") {
-                    popUpTo("home") { inclusive = true }
->>>>>>> a650f06775289ebea07258fcfc9116004bf63616
                 }
             },
             modifier = Modifier
