@@ -11,12 +11,15 @@ import com.example.redcard.data.DataStoreManager
 import com.example.redcard.ui.ChoosePlayerBallScreen
 import com.example.redcard.ui.ConfigurationScreen
 import com.example.redcard.ui.GameIntroductionScreen
+import com.example.redcard.ui.GameScreen
 import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
 import com.example.redcard.ui.PlayerSetupScreen
 import com.example.redcard.ui.PlayerWordDiscoverScreen
 import com.example.redcard.ui.StartingPage
 import com.example.redcard.ui.TutorialSwipeableScreen
+import com.example.redcard.ui.VictoryScreen
+import com.example.redcard.ui.VoteScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +53,9 @@ fun AppNavigation() {
         composable("PlayerWordDiscoverScreen") {
             PlayerWordDiscoverScreen(navController, dataStoreManager)
         }
+        composable("gameScreen") { GameScreen(navController) }
+        composable("voteScreen") { VoteScreen(navController) }
+        composable("victoryScreen") { VictoryScreen(navController) }
     }
 }
 
