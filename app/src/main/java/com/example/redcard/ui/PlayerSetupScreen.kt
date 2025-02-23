@@ -22,7 +22,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.R
 import com.example.redcard.data.DataStoreManager
 import kotlinx.coroutines.launch
-
 @Composable
 fun PlayerSetupScreen(
     navController: NavController,
@@ -33,20 +32,15 @@ fun PlayerSetupScreen(
     val scope = rememberCoroutineScope()
     var playerName by remember { mutableStateOf("") }
     var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    val selectedWord by dataStoreManager.selectedBallWordFlow.collectAsState(initial = null)
+    var photoTimestamp by remember { mutableStateOf(0L) }
+    val savedPhotoUri by dataStoreManager.playerPhotoUriFlow.collectAsState(initial = null)
 
-    // Launcher pour la caméra - déclaré AVANT son utilisation dans permissionLauncher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && currentPhotoUri != null) {
-            scope.launch {
-                dataStoreManager.savePlayerPhotoUri(currentPhotoUri.toString())
-            }
+    LaunchedEffect(savedPhotoUri) {
+        savedPhotoUri?.let {
+            currentPhotoUri = Uri.parse(it)
         }
     }
 
-    // Gérer la permission de la caméra
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -56,21 +50,39 @@ fun PlayerSetupScreen(
         )
     }
 
-    // Launcher pour demander la permission
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
-        if (isGranted) {
-            val newPhotoUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                dataStoreManager.getPhotoFile()
-            )
-            currentPhotoUri = newPhotoUri
-            cameraLauncher.launch(newPhotoUri)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && currentPhotoUri != null) {
+            scope.launch {
+                dataStoreManager.savePlayerPhotoUri(currentPhotoUri.toString())
+                photoTimestamp = System.currentTimeMillis() // Force recomposition
+            }
         }
     }
+
+    fun takeNewPhoto() {
+        if (hasCameraPermission) {
+            val photoFile = dataStoreManager.getPhotoFile()
+            currentPhotoUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                photoFile
+            )
+
+            cameraLauncher.launch(currentPhotoUri)
+        } else {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+
 
     Scaffold(
         topBar = {
@@ -95,40 +107,45 @@ fun PlayerSetupScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Zone de photo
             Box(
                 modifier = Modifier
                     .size(200.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentPhotoUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(currentPhotoUri),
-                        contentDescription = "Photo de profil",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    IconButton(
-                        onClick = {
-                            if (hasCameraPermission) {
-                                val newPhotoUri = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    dataStoreManager.getPhotoFile()
-                                )
-                                currentPhotoUri = newPhotoUri
-                                cameraLauncher.launch(newPhotoUri)
-                            } else {
-                                permissionLauncher.launch(Manifest.permission.CAMERA)
-                            }
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_camera),
-                            contentDescription = "Prendre une photo",
-                            modifier = Modifier.size(48.dp)
+                key(photoTimestamp) { //Pour forcer la recomposition lorsque on se reprend en photo
+                    if (currentPhotoUri != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = currentPhotoUri,
+                                error = painterResource(id = R.drawable.ic_camera)
+                            ),
+                            contentDescription = "Photo de profil",
+                            modifier = Modifier.fillMaxSize()
                         )
+
+                        IconButton(
+                            onClick = { takeNewPhoto() },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_camera),
+                                contentDescription = "Reprendre une photo",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { takeNewPhoto() }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_camera),
+                                contentDescription = "Prendre une photo",
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -140,24 +157,17 @@ fun PlayerSetupScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            selectedWord?.let {
-                Text(
-                    text = "Ton mot secret est: $it",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-
             Button(
                 onClick = {
                     scope.launch {
                         dataStoreManager.savePlayerName(playerName)
-                        navController.navigate("game_screen")
+                        navController.navigate("PlayerWordDiscoverScreen")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = playerName.isNotBlank() && currentPhotoUri != null
             ) {
-                Text("Continuer")
+                Text("Lire mon mot ")
             }
         }
     }

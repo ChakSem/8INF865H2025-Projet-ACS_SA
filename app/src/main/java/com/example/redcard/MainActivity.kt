@@ -14,6 +14,7 @@ import com.example.redcard.ui.GameIntroductionScreen
 import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
 import com.example.redcard.ui.PlayerSetupScreen
+import com.example.redcard.ui.PlayerWordDiscoverScreen
 import com.example.redcard.ui.StartingPage
 import com.example.redcard.ui.TutorialSwipeableScreen
 
@@ -45,9 +46,10 @@ fun AppNavigation() {
         composable("PlayerSetupScreen") {
             PlayerSetupScreen(navController, dataStoreManager)
         }
-        composable("startingPage") { StartingPage(navController) }
-        composable("tutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
-
+        composable("TutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
+        composable("PlayerWordDiscoverScreen") {
+            PlayerWordDiscoverScreen(navController, dataStoreManager)
+        }
     }
 }
 

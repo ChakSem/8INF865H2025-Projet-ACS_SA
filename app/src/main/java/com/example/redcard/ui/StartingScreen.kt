@@ -93,8 +93,8 @@ fun StartingPage(navController: NavController) {
                     modifier = Modifier
                         .size(40.dp)
                         .clickable {
-                            navController.navigate("tutorialSwipeableScreen") {
-                                popUpTo("tutorialSwipeableScreen") { inclusive = true }
+                            navController.navigate("TutorialSwipeableScreen") {
+                                popUpTo("TutorialSwipeableScreen") { inclusive = true }
                             }
                         }
                         .onGloballyPositioned { coordinates ->

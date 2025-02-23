@@ -86,6 +86,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("com.google.accompanist:accompanist-pager:0.30.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
 
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
