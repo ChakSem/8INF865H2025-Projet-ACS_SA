@@ -5,7 +5,6 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.io.File
 
 // Création de DataStore
 val Context.dataStore by preferencesDataStore(name = "configurations")
@@ -109,3 +108,4 @@ class DataStoreManager(private val context: Context) {
 
 }
 
+}

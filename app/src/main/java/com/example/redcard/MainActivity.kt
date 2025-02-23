@@ -19,6 +19,16 @@ import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
 import com.example.redcard.ui.PlayerSetupScreen
 import com.example.redcard.ui.StartingPage
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.*
+import com.example.redcard.data.DataStoreManager
+import com.example.redcard.ui.ConfigurationScreen
+import com.example.redcard.ui.GeneralSettingScreen
+import com.example.redcard.ui.HomeScreen
+import com.example.redcard.ui.StartingPage
+import com.example.redcard.ui.TutorialSwipeableScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +58,9 @@ fun AppNavigation() {
         composable("PlayerSetupScreen") {
             PlayerSetupScreen(navController, dataStoreManager)
         }
+        composable("startingPage") { StartingPage(navController) }
+        composable("tutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
+
     }
 }
 
