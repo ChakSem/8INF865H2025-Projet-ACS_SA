@@ -43,12 +43,12 @@ fun GameScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_menu),
+                imageVector = Icons.Filled.Home,
                 contentDescription = "Accueil",
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(40.dp)
                     .clickable {
-                        navController.navigate("home") {
+                        navController.navigate("startingPage") {
                             popUpTo("home") { inclusive = true }
                         }
                     }

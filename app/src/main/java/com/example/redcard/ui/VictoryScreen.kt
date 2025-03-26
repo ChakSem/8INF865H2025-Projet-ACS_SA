@@ -48,7 +48,7 @@ fun VictoryScreen(
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Réglages",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }

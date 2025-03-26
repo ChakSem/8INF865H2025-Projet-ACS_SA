@@ -60,15 +60,15 @@ fun VoteScreen(
         ) {
             IconButton(
                 onClick = {
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
+                    navController.navigate("startingPage") {
+                        popUpTo("startingPage") { inclusive = true }
                     }
                 }
             ) {
                 Icon(
                     imageVector = Icons.Filled.Home, // Icône Home de Google Fonts
                     contentDescription = "Accueil",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
 
@@ -80,7 +80,7 @@ fun VoteScreen(
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Réglages",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }

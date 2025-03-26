@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,12 +50,12 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_menu),
+                imageVector = Icons.Filled.Home,
                 contentDescription = "Accueil",
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(40.dp)
                     .clickable {
-                        navController.navigate("home") {
+                        navController.navigate("startingPage") {
                             popUpTo("home") { inclusive = true }
                         }
                     }
@@ -63,10 +66,10 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
                 fontWeight = FontWeight.Bold
             )
             Icon(
-                painter = painterResource(id = R.drawable.ic_settings),
+                imageVector = Icons.Filled.Settings,
                 contentDescription = "Parametrages",
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(40.dp)
                     .clickable {
                         navController.navigate("generalSettings") {
                             popUpTo("generalSettings") { inclusive = true }
