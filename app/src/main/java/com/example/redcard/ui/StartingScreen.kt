@@ -14,6 +14,9 @@ import androidx.navigation.NavController
 import com.example.redcard.R
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.MenuBook
 
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -88,10 +91,10 @@ fun StartingPage(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_book),
+                    imageVector = Icons.Outlined.MenuBook,
                     contentDescription = "Home",
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(50.dp)
                         .clickable {
                             navController.navigate("TutorialSwipeableScreen") {
                                 popUpTo("TutorialSwipeableScreen") { inclusive = true }
@@ -103,10 +106,10 @@ fun StartingPage(navController: NavController) {
                 )
 
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_settings),
-                    contentDescription = "Paramètres",
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Réglages",
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(50.dp)
                         .clickable {
                             navController.navigate("generalSettings") {
                                 popUpTo("generalSettings") { inclusive = true }
