@@ -14,14 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.redcard.R
 import com.example.redcard.data.DataStoreManager
 import kotlinx.coroutines.launch
 
@@ -30,10 +28,32 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
     val dataStore = remember { DataStoreManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    val players by dataStore.playersFlow.collectAsState(initial = 3)
-    val titulaires by dataStore.titulairesFlow.collectAsState(initial = 2)
-    val footix by dataStore.footixFlow.collectAsState(initial = 0)
-    val remplacants by dataStore.remplacantsFlow.collectAsState(initial = 1)
+    // État initial avec 3 joueurs : 2 titulaires, 1 footix, 0 remplacant
+    var players by remember { mutableStateOf(3) }
+    var footix by remember { mutableStateOf(1) }
+    var remplacants by remember { mutableStateOf(0) }
+
+    // Calcul dynamique des titulaires
+    val titulaires by remember { derivedStateOf {
+        players - footix - remplacants
+    }}
+
+    // Fonction pour ajuster les rôles avec la contrainte : plus de titu que de footix ou de remplaçant
+    fun updateRoles(newFootix: Int, newRemplacants: Int) {
+        val total = newFootix + newRemplacants
+        val minTitulaires = (players + 1) / 2  // Plus de titulaires que footix/remplaçants
+
+        // Vérifie si on essaie de mettre 0 footix et 0 remplacants → impossible
+        if ((newFootix == 0 && newRemplacants == 0) || newFootix + newRemplacants > players - minTitulaires) {
+            return
+        }
+
+        // Vérifier que le total des footix + remplacants ne dépasse pas les titulaires
+        if (newFootix >= 0 && newRemplacants >= 0 && newFootix + newRemplacants <= players - minTitulaires) {
+            footix = newFootix
+            remplacants = newRemplacants
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -41,7 +61,7 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Icône maison et titre
+        // Icône et titre
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -67,7 +87,7 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
             )
             Icon(
                 imageVector = Icons.Filled.Settings,
-                contentDescription = "Parametrages",
+                contentDescription = "Paramètres",
                 modifier = Modifier
                     .size(40.dp)
                     .clickable {
@@ -82,12 +102,38 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
         NumberSelector(
             title = "Joueurs",
             value = players,
+            footix = footix,
+            remplacants = remplacants,
             onValueChange = { newValue ->
-                if (newValue >= 0) {
-                    coroutineScope.launch { dataStore.savePlayers(newValue) }
+                if (newValue in 3..20) {
+                    if (newValue > players) {
+                        // Ajout d'un joueur => ajoute un titulaire
+                        players = newValue
+                    } else if (newValue < players) {
+                        // Retrait d'un joueur
+                        val diff = players - newValue
+                        for (i in 1..diff) {
+                            if (titulaires > footix + remplacants) {
+                                // Si plus de titulaires que footix + remplacants, enlève un titulaire
+                                players--
+                            } else {
+                                // Sinon, regarde les remplaçants et les footix
+                                if (remplacants == footix && remplacants > 0) {
+                                    remplacants--
+                                } else if (remplacants > footix) {
+                                    remplacants--
+                                } else if (footix > 0) {
+                                    footix--
+                                }
+                                players--
+                            }
+                        }
+                    }
                 }
             }
         )
+
+
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -101,40 +147,39 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
                 .padding(bottom = 16.dp)
         )
 
-        // Sélecteurs pour les rôles
-        NumberSelector(
-            title = "Titulaire",
-            value = titulaires,
-            onValueChange = { newValue ->
-                if (newValue >= 0) {
-                    coroutineScope.launch { dataStore.saveTitulaires(newValue) }
-                }
-            }
-        )
+        // Titulaires - Pas de modification possible
+        RoleDisplay(title = "Titulaire", value = titulaires)
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Footix - Modification possible
         NumberSelector(
             title = "Footix",
             value = footix,
+            footix = footix,
+            remplacants = remplacants,
             onValueChange = { newValue ->
-                if (newValue >= 0) {
-                    coroutineScope.launch { dataStore.saveFootix(newValue) }
+                if (newValue >= 0 && newValue + remplacants <= players - (players + 1) / 2) {
+                    updateRoles(newValue, remplacants)
                 }
             }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Remplaçant - Modification possible
         NumberSelector(
             title = "Remplaçant",
             value = remplacants,
+            footix = footix,
+            remplacants = remplacants,
             onValueChange = { newValue ->
-                if (newValue >= 0) {
-                    coroutineScope.launch { dataStore.saveRemplacants(newValue) }
+                if (newValue >= 0 && newValue + footix <= players - (players + 1) / 2) {
+                    updateRoles(footix, newValue)
                 }
             }
         )
+
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -158,10 +203,39 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
     }
 }
 
+// Composant pour afficher les rôles non modifiables
+@Composable
+fun RoleDisplay(
+    title: String,
+    value: Int
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            fontSize = 16.sp
+        )
+        Text(
+            text = value.toString(),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+// Composant pour les sélecteurs de rôles modifiables
 @Composable
 fun NumberSelector(
     title: String,
     value: Int,
+    footix: Int,
+    remplacants: Int,
     onValueChange: (Int) -> Unit
 ) {
     Row(
@@ -183,10 +257,16 @@ fun NumberSelector(
         ) {
             IconButton(
                 onClick = { onValueChange(value - 1) },
-                enabled = value > 0
-            ) {
+                enabled = value > 0 && (
+                        (title == "Footix" && (footix > 1 || remplacants > 0)) ||  // Footix peut être réduit si > 1 ou si remplaçant existe
+                                (title == "Remplaçant" && (remplacants > 1 || footix > 0)) ||  // Remplaçant peut être réduit si > 1 ou si footix existe
+                                (title != "Footix" && title != "Remplaçant")  // Si ce n'est pas un Footix/Remplaçant, autorise toujours
+                        )
+            )
+            {
                 Text(text = "-", fontSize = 20.sp)
             }
+
 
             Text(
                 text = value.toString(),
@@ -202,6 +282,7 @@ fun NumberSelector(
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
