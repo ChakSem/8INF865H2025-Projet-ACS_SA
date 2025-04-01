@@ -17,7 +17,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id ("org.jetbrains.kotlin.plugin.compose")
-
+    // Add the Google services Gradle plugin
+    id("com.google.gms.google-services")
 
 }
 
@@ -91,4 +92,16 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+
+
+    // TODO: Add the dependencies for Firebase products you want to use
+    // When using the BoM, don't specify versions in Firebase dependencies
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-firestore") // Pour utiliser Firestore
+    implementation("com.google.firebase:firebase-auth")      // Pour l'authentification (optionnel)
+    implementation("com.google.firebase:firebase-database")  // Pour Realtime Database (optionnel)
+
 }

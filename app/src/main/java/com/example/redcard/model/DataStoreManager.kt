@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.io.File
 
@@ -24,6 +25,7 @@ class DataStoreManager(private val context: Context) {
         val SELECTED_BALL_WORD_KEY = stringPreferencesKey("selected_ball_word")
         val PLAYER_PHOTO_URI_KEY = stringPreferencesKey("player_photo_uri")
         val PLAYER_NAME_KEY = stringPreferencesKey("player_name")
+        val SELECTED_BALLS_KEY = stringSetPreferencesKey("selected_balls")
     }
     // Mots secrets par défaut
     private val defaultSecretWords = setOf(
@@ -52,6 +54,17 @@ class DataStoreManager(private val context: Context) {
     val footixFlow: Flow<Int> = context.dataStore.data.map { it[FOOTIX_KEY] ?: 0 }
     val remplacantsFlow: Flow<Int> = context.dataStore.data.map { it[REMPLACANTS_KEY] ?: 1 }
 
+    val rolesFlow: Flow<List<String>> = combine(
+        titulairesFlow,
+        footixFlow,
+        remplacantsFlow
+    ) { titulaires, footix, remplacants ->
+        List(titulaires) { "Titulaire" } +
+                List(footix) { "Footix" } +
+                List(remplacants) { "Remplaçant" }
+    }.map { it.shuffled() } // Mélanger les rôles pour éviter un ordre prévisible
+
+
     val soundEnabledFlow: Flow<Boolean> = context.dataStore.data.map { it[SOUND_ENABLED_KEY] ?: true }
     val currentLanguageFlow: Flow<String> = context.dataStore.data.map { it[CURRENT_LANGUAGE_KEY] ?: "Français" }
 
@@ -79,6 +92,20 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveCurrentLanguage(value: String) {
         context.dataStore.edit { it[CURRENT_LANGUAGE_KEY] = value }
     }
+
+    // Flux des ballons sélectionnés
+    val selectedBallsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { it[SELECTED_BALLS_KEY] ?: emptySet() }
+
+    // Sauvegarder un ballon sélectionné
+    suspend fun saveSelectedBall(word: String) {
+        context.dataStore.edit { preferences ->
+            val updatedBalls = preferences[SELECTED_BALLS_KEY]?.toMutableSet() ?: mutableSetOf()
+            updatedBalls.add(word)
+            preferences[SELECTED_BALLS_KEY] = updatedBalls
+        }
+    }
+
 
     // Nouveau flux pour l'URI de la photo
     val playerPhotoUriFlow: Flow<String?> = context.dataStore.data

@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.*
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.model.FirestoreManager
 import com.example.redcard.ui.ChoosePlayerBallScreen
 import com.example.redcard.ui.ConfigurationScreen
 import com.example.redcard.ui.GameIntroductionScreen
@@ -20,10 +21,12 @@ import com.example.redcard.ui.StartingPage
 import com.example.redcard.ui.TutorialSwipeableScreen
 import com.example.redcard.ui.VictoryScreen
 import com.example.redcard.ui.VoteScreen
+import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this) // Initialisation de Firebase
         setContent {
             AppNavigation()
         }
@@ -35,6 +38,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current // Récupération du contexte
     val dataStoreManager = DataStoreManager(context) // Création de l'instance DataStoreManager
+    val firestoreManager = FirestoreManager(context) // Création de l'instance FirestoreManager
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }

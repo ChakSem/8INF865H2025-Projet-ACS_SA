@@ -186,8 +186,17 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
         // Bouton Commencer
         Button(
             onClick = {
-                navController.navigate("GameIntroductionScreen") {
-                    popUpTo("GameIntroductionScreen") { inclusive = true }
+                coroutineScope.launch {
+                    // Sauvegarde les valeurs dans le DataStore avant de naviguer
+                    dataStore.savePlayers(players)
+                    dataStore.saveTitulaires(titulaires)
+                    dataStore.saveFootix(footix)
+                    dataStore.saveRemplacants(remplacants)
+
+                    // Navigation vers la page suivante
+                    navController.navigate("GameIntroductionScreen") {
+                        popUpTo("GameIntroductionScreen") { inclusive = true }
+                    }
                 }
             },
             modifier = Modifier
@@ -200,6 +209,7 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
                 fontSize = 18.sp
             )
         }
+
     }
 }
 
