@@ -9,25 +9,44 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.redcard.R
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.ThemeViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun GeneralSettingScreen(
     navController: NavController,
-    dataStoreManager: DataStoreManager
+    dataStoreManager: DataStoreManager,
+    themeViewModel: ThemeViewModel
 ) {
     val scope = rememberCoroutineScope()
+
+    // Observer l'état du thème
+    val currentTheme by themeViewModel.theme.collectAsState()
+
     var soundEnabled by remember { mutableStateOf(true) }
-    var currentLanguage by remember { mutableStateOf("Français") }
     var notificationsEnabled by remember { mutableStateOf(true) }
     var musicEnabled by remember { mutableStateOf(true) }
+
+    var themeExpanded by remember { mutableStateOf(false) }
+
+    // Initialiser selectedTheme selon le thème actuel
+    var selectedTheme by remember { mutableStateOf(
+        when (currentTheme) {
+            AppTheme.CLAIR -> "Clair"
+            AppTheme.SOMBRE -> "Sombre"
+            else -> "Système"
+        }
+    ) }
+
+    val themeOptions = listOf("Clair", "Sombre", "Système")
 
     Scaffold(
         topBar = {
@@ -35,10 +54,7 @@ fun GeneralSettingScreen(
                 title = { Text("Paramètres") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Retour"
-                        )
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 }
             )
@@ -48,12 +64,11 @@ fun GeneralSettingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
             // Son
             SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
+                icon = Icons.Default.VolumeUp,
                 title = "Son",
                 trailing = {
                     Switch(
@@ -62,43 +77,52 @@ fun GeneralSettingScreen(
                     )
                 }
             )
+            SettingDivider()
 
-            // Langue
+            // Apparence (thème)
             SettingItem(
-                iconPainter = painterResource(id = R.drawable.ic_flag_fr),
-                title = "Langue",
-                trailing = {
-                    Text(
-                        text = currentLanguage,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                onClick = {
-                    // Ouvrir le sélecteur de langue
-                }
-            )
-
-            // Apparence
-            SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
+                icon = Icons.Default.DarkMode,
                 title = "Apparence",
-                onClick = {
-                    // Ouvrir les paramètres d'apparence
-                }
-            )
+                trailing = {
+                    Box {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { themeExpanded = true }
+                        ) {
+                            Text(text = selectedTheme)
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Choisir thème"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = themeExpanded,
+                            onDismissRequest = { themeExpanded = false }
+                        ) {
+                            themeOptions.forEach { theme ->
+                                DropdownMenuItem(
+                                    text = { Text(theme) },
+                                    onClick = {
+                                        selectedTheme = theme
+                                        themeExpanded = false
 
-            // Système
-            SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
-                title = "Système",
-                onClick = {
-                    // Ouvrir les paramètres système
+                                        when (theme) {
+                                            "Clair" -> themeViewModel.setTheme(AppTheme.CLAIR)
+                                            "Sombre" -> themeViewModel.setTheme(AppTheme.SOMBRE)
+                                            "Système" -> themeViewModel.setTheme(AppTheme.SYSTEME)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             )
+            SettingDivider()
 
             // Notifications
             SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
+                icon = Icons.Default.Notifications,
                 title = "Notifications",
                 trailing = {
                     Switch(
@@ -107,11 +131,12 @@ fun GeneralSettingScreen(
                     )
                 }
             )
+            SettingDivider()
 
-            // Musique
+            // Musique de fond
             SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
-                title = "Musique",
+                icon = Icons.Default.MusicNote,
+                title = "Musique de fond",
                 trailing = {
                     Switch(
                         checked = musicEnabled,
@@ -119,24 +144,40 @@ fun GeneralSettingScreen(
                     )
                 }
             )
+            SettingDivider()
 
             // Évaluer l'application
             SettingItem(
-                icon = painterResource(id = R.drawable.ic_logo),
+                icon = Icons.Default.Favorite,
                 title = "Évaluer l'application",
                 titleColor = Color.Red,
                 onClick = {
-                    // Ouvrir la page d'évaluation
+                    // Rediriger vers Play Store
                 }
             )
         }
     }
 }
 
+
+
+
+@Composable
+fun SettingDivider() {
+    Divider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 56.dp),
+        color = Color(0xFFE0E0E0), // Gris très clair
+        thickness = 1.dp
+    )
+}
+
+
+
 @Composable
 private fun SettingItem(
-    icon: Painter? = null,
-    iconPainter: Painter? = null,
+    icon: ImageVector,
     title: String,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     trailing: @Composable (() -> Unit)? = null,
@@ -145,31 +186,22 @@ private fun SettingItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) {
-                Modifier.clickable(onClick = onClick)
-            } else Modifier),
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .padding(8.dp)
-                .height(48.dp),
+                .height(56.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (icon != null) {
-                Icon(
-                    painter = icon,
-                    contentDescription = null,
-                    tint = titleColor
-                )
-            } else if (iconPainter != null) {
-                Icon(
-                    painter = iconPainter,
-                    contentDescription = null,
-                    tint = Color.Unspecified
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = titleColor,
+                modifier = Modifier.size(28.dp) // Taille un peu plus grande
+            )
 
             Text(
                 text = title,
@@ -183,4 +215,5 @@ private fun SettingItem(
         }
     }
 }
+
 

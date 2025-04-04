@@ -14,6 +14,8 @@ import androidx.navigation.NavController
 import com.example.redcard.R
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.MenuBook
@@ -23,8 +25,26 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.ThemeViewModel
+
 @Composable
-fun StartingPage(navController: NavController) {
+fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
+    // Observer le thème actuel
+    val currentTheme by themeViewModel.theme.collectAsState()
+    val iconColor = LocalContentColor.current
+
+    // Déterminer si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+    }
+
+    // Appliquer le thème ici
+    val backgroundColor = if (darkTheme) Color.Black else Color.White
+    val textColor = if (darkTheme) Color.White else Color.Black
+
     var textPosition by remember { mutableStateOf(Offset.Zero) }
     var iconPosition by remember { mutableStateOf(Offset.Zero) }
     var firstClickDone by remember { mutableStateOf(false) }
@@ -48,7 +68,7 @@ fun StartingPage(navController: NavController) {
         )
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -65,7 +85,7 @@ fun StartingPage(navController: NavController) {
                 },
                 modifier = Modifier.padding(vertical = 16.dp)
             ) {
-                Text(text = "Commencer", fontSize = 20.sp)
+                Text(text = "Commencer", fontSize = 20.sp, color = textColor)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -73,6 +93,7 @@ fun StartingPage(navController: NavController) {
             Text(
                 text = "Première fois ?",
                 fontSize = 18.sp,
+                color = textColor,
                 modifier = Modifier
                     .clickable {
                         firstClickDone = !firstClickDone
@@ -93,6 +114,7 @@ fun StartingPage(navController: NavController) {
                 Icon(
                     imageVector = Icons.Outlined.MenuBook,
                     contentDescription = "Home",
+                    tint = iconColor,
                     modifier = Modifier
                         .size(50.dp)
                         .clickable {
@@ -108,6 +130,7 @@ fun StartingPage(navController: NavController) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Réglages",
+                    tint = iconColor,
                     modifier = Modifier
                         .size(50.dp)
                         .clickable {
