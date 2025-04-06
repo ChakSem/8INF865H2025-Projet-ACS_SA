@@ -89,6 +89,9 @@ dependencies {
     implementation("com.google.accompanist:accompanist-pager:0.30.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
     implementation("androidx.compose.material:material-icons-extended:1.0.5")
+    implementation("com.google.android.material:compose-theme-adapter:1.0.0")
+    implementation("io.coil-kt:coil-compose:2.0.0")
+
 
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")

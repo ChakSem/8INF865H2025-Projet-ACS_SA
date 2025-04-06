@@ -12,13 +12,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.redcard.R
 import kotlinx.coroutines.delay
+
+import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun HomeScreen(
@@ -46,6 +51,14 @@ fun HomeScreen(
             },
         contentAlignment = Alignment.Center
     ) {
+        // Image de fond
+        Image(
+            painter = painterResource(id = R.drawable.background_image), // Remplace 'background_image' par ton image de fond
+            contentDescription = "Background Image",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // Cette option permet d'ajuster l'image pour qu'elle couvre tout l'écran
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -62,11 +75,13 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_flag_fr),
-                    contentDescription = "Accueil",
+                // Utilisation de Coil pour afficher le SVG
+                Image(
+                    painter = rememberAsyncImagePainter(R.drawable.drapeau_francais), // SVG du drapeau français
+                    contentDescription = "Drapeau Français",
                     modifier = Modifier.size(40.dp)
                 )
+
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Réglages",
@@ -83,7 +98,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(50.dp))
 
             Image(
-                painter = painterResource(id = R.drawable.ic_logo),
+                painter = painterResource(id = R.drawable.redcard_logo),
                 contentDescription = "Logo Red Card",
                 modifier = Modifier
                     .width(400.dp)
@@ -100,12 +115,16 @@ fun HomeScreen(
                 exit = fadeOut(animationSpec = tween(700))  // Disparition douce
             ) {
                 Text(
-                    text = "Appuyer pour continuer",
-                    fontSize = 18.sp,
+                    text = "COMMENCER",
+                    fontSize = 30.sp, // Texte plus gros
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.White, // Texte en blanc
+                    fontFamily = FontFamily(Font(R.font.rubik_medium_italic)), // Police Rubik
+                    modifier = Modifier.padding(top = 20.dp) // Spacer au-dessus du texte
                 )
             }
         }
     }
 }
+
+
