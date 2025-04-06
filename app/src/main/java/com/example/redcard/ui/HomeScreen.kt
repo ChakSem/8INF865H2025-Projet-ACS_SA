@@ -18,23 +18,90 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.redcard.R
+import com.example.redcard.data.DataStoreManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     navController: NavController,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     onSettingsClick: () -> Unit = {},
     innerPadding: PaddingValues = PaddingValues(),
 ) {
     var isTextVisible by remember { mutableStateOf(true) }
+    val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
+    val allPlayersRegistered by dataStoreManager.allPlayersRegisteredFlow.collectAsState(initial = false)
+    var showContinueDialog by remember { mutableStateOf(false) }
+
+    // Ajout du scope de coroutine manquant
+    val scope = rememberCoroutineScope()
 
     // Animation pour alterner la visibilité du texte
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000L) // Délai avant l'animation inverse
+            delay(1000L)
             isTextVisible = !isTextVisible
         }
+    }
+
+    // Boîte de dialogue pour demander à l'utilisateur s'il souhaite continuer le jeu en cours
+    if (showContinueDialog) {
+        AlertDialog(
+            onDismissRequest = { showContinueDialog = false },
+            title = { Text("Partie en cours") },
+            text = { Text("Voulez-vous continuer la partie en cours ou commencer une nouvelle partie ?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showContinueDialog = false
+                        scope.launch {
+                            try {
+                                // Forcer un rafraîchissement des données avant de vérifier
+                                dataStoreManager.forceRefreshRegisteredPlayers()
+
+                                if (allPlayersRegistered) {
+                                    // Si tous les joueurs sont enregistrés, naviguer vers la page principale du jeu
+                                    navController.navigate("ChoosePlayerBallScreen?refresh=true")
+                                } else {
+                                    // S'il manque des joueurs, continuer l'enregistrement
+                                    // Correction: complétez la navigation vers la page d'ajout de joueurs
+                                    navController.navigate("PlayerSetupScreen")
+                                }
+                            } catch (e: Exception) {
+                                // En cas d'erreur, naviguer vers un endroit sûr
+                                navController.navigate("ChooseConfigurationScreen") {
+                                    // Clear the back stack to prevent going back to the home screen
+                                    popUpTo("home") { inclusive = true }
+                                }
+                            }
+                        }
+                    }
+                ) {
+                    Text("Continuer")
+                }
+            },
+            // Bouton pour commencer une nouvelle partie
+            dismissButton = {
+                Button(
+                    onClick = {
+                        showContinueDialog = false
+                        scope.launch {
+                            // Réinitialiser le jeu avant de commencer une nouvelle partie
+                            dataStoreManager.resetGame()
+                            // S'assurer que cette route existe
+                            navController.navigate("gameConfiguration") {
+                                // Clear the back stack to prevent going back to the home screen
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }
+                    }
+                ) {
+                    Text("Nouvelle partie")
+                }
+            }
+        )
     }
 
     Box(
@@ -42,7 +109,15 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(innerPadding)
             .clickable {
-                navController.navigate("startingPage")
+                if (registeredPlayers.isNotEmpty()) {
+                    showContinueDialog = true
+                } else {
+                    // Si aucun joueur enregistré, aller directement à la configuration
+                    navController.navigate("startingPage") {
+                        // Clear the back stack to prevent going back to the home screen
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
             },
         contentAlignment = Alignment.Center
     ) {
@@ -52,9 +127,10 @@ fun HomeScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Le reste du code reste inchangé
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Icône maison et icône settings
+            // Entête avec icônes
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -73,8 +149,10 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(40.dp)
                         .clickable {
+                            onSettingsClick()
+                            // Vérifier que cette route existe
                             navController.navigate("generalSettings") {
-                                popUpTo("generalSettings") { inclusive = true }
+                                launchSingleTop = true
                             }
                         }
                 )
@@ -82,6 +160,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(50.dp))
 
+            // Logo principal
             Image(
                 painter = painterResource(id = R.drawable.ic_logo),
                 contentDescription = "Logo Red Card",
@@ -90,14 +169,13 @@ fun HomeScreen(
                     .height(400.dp)
             )
 
-            // Spacer pour décaler le texte un peu vers le bas
             Spacer(modifier = Modifier.height(100.dp))
 
-            // Texte avec animation de fondu progressif
+
             AnimatedVisibility(
                 visible = isTextVisible,
-                enter = fadeIn(animationSpec = tween(700)), // Apparition douce
-                exit = fadeOut(animationSpec = tween(700))  // Disparition douce
+                enter = fadeIn(animationSpec = tween(700)),
+                exit = fadeOut(animationSpec = tween(700))
             ) {
                 Text(
                     text = "Appuyer pour continuer",
