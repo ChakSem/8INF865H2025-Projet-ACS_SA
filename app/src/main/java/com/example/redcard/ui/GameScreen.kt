@@ -20,11 +20,20 @@ import androidx.navigation.NavController
 import com.example.redcard.R
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.platform.LocalContext
+import com.example.redcard.model.MusicPlayerManager
 
 @Composable
 fun GameScreen(
     navController: NavController,
 ) {
+    // Musique de fond
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        MusicPlayerManager.playMusicGame(context)
+    }
+
     var isEyeOpen by remember { mutableStateOf(false) }
 
     Column(

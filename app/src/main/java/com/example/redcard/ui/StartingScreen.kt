@@ -30,10 +30,20 @@ import com.example.redcard.ui.theme.RedCardTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.example.redcard.model.MusicPlayerManager
 
 
 @Composable
 fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
+
+    // Musique de fond
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        MusicPlayerManager.playMusicSalon(context)
+    }
+
     // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
 
@@ -90,7 +100,7 @@ fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
                     },
                     modifier = Modifier.padding(vertical = 16.dp)
                 ) {
-                    Text(text = "Commencer", fontSize = 20.sp, color = textColor)
+                    Text(text = "Commencer", fontSize = 20.sp, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))

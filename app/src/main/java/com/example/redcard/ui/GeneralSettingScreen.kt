@@ -10,12 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.redcard.R
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.model.MusicPlayerManager
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -67,13 +69,25 @@ fun GeneralSettingScreen(
                 .padding(horizontal = 16.dp)
         ) {
             // Son
+            val context = LocalContext.current
+            var musicEnabled by remember { mutableStateOf(MusicPlayerManager.isPlaying) }
+
             SettingItem(
                 icon = Icons.Default.VolumeUp,
                 title = "Son",
                 trailing = {
                     Switch(
-                        checked = soundEnabled,
-                        onCheckedChange = { soundEnabled = it }
+                        checked = musicEnabled,
+                        onCheckedChange = {
+                            musicEnabled = it
+                            MusicPlayerManager.toggleMusic(
+                                enabled = it,
+                                context = context
+                            ) {
+                                // Rejoue la bonne musique si activé
+                                MusicPlayerManager.resumeMusic()
+                            }
+                        }
                     )
                 }
             )
@@ -128,19 +142,6 @@ fun GeneralSettingScreen(
                     Switch(
                         checked = notificationsEnabled,
                         onCheckedChange = { notificationsEnabled = it }
-                    )
-                }
-            )
-            SettingDivider()
-
-            // Musique de fond
-            SettingItem(
-                icon = Icons.Default.MusicNote,
-                title = "Musique de fond",
-                trailing = {
-                    Switch(
-                        checked = musicEnabled,
-                        onCheckedChange = { musicEnabled = it }
                     )
                 }
             )

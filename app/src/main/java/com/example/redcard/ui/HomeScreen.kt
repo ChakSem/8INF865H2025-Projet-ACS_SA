@@ -1,5 +1,6 @@
 package com.example.redcard.ui
 
+import android.media.MediaPlayer
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -24,6 +26,7 @@ import com.example.redcard.R
 import kotlinx.coroutines.delay
 
 import coil.compose.rememberAsyncImagePainter
+import com.example.redcard.model.MusicPlayerManager
 
 @Composable
 fun HomeScreen(
@@ -33,6 +36,13 @@ fun HomeScreen(
     innerPadding: PaddingValues = PaddingValues(),
 ) {
     var isTextVisible by remember { mutableStateOf(true) }
+
+    // Musique de fond
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        MusicPlayerManager.playMusicIntro(context)
+    }
 
     // Animation pour alterner la visibilité du texte
     LaunchedEffect(Unit) {
