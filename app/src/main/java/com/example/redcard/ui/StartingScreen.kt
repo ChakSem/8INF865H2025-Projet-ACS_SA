@@ -26,13 +26,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.RedCardTheme
 import com.example.redcard.ui.theme.ThemeViewModel
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+
 
 @Composable
 fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
     // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
-    val iconColor = LocalContentColor.current
 
     // Déterminer si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
@@ -41,80 +44,86 @@ fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
         AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
     }
 
-    // Appliquer le thème ici
-    val backgroundColor = if (darkTheme) Color.Black else Color.White
-    val textColor = if (darkTheme) Color.White else Color.Black
+    // Appliquer le thème global ici
+    RedCardTheme(darkTheme = darkTheme) {
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val textColor = MaterialTheme.colorScheme.onBackground
+        val iconColor = if (darkTheme) Color.White else Color.Black // Icônes blanches si thème clair, sinon couleur par défaut
 
-    var textPosition by remember { mutableStateOf(Offset.Zero) }
-    var iconPosition by remember { mutableStateOf(Offset.Zero) }
-    var firstClickDone by remember { mutableStateOf(false) }
+        var textPosition by remember { mutableStateOf(Offset.Zero) }
+        var iconPosition by remember { mutableStateOf(Offset.Zero) }
+        var firstClickDone by remember { mutableStateOf(false) }
 
-    val infiniteTransition = rememberInfiniteTransition()
-    val circleScale by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+        val infiniteTransition = rememberInfiniteTransition()
+        val circleScale by infiniteTransition.animateFloat(
+            initialValue = 0.6f,
+            targetValue = 1.4f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
         )
-    )
 
-    val arrowOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000),
-            repeatMode = RepeatMode.Restart
+        val arrowOffset by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000),
+                repeatMode = RepeatMode.Restart
+            )
         )
-    )
 
-    Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(50.dp))
-
-            Button(
-                onClick = {
-                    navController.navigate("gameConfiguration") {
-                        popUpTo("startingPage") { inclusive = true }
-                    }
-                },
-                modifier = Modifier.padding(vertical = 16.dp)
+        Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "Commencer", fontSize = 20.sp, color = textColor)
+                Spacer(modifier = Modifier.height(400.dp))
+
+                Button(
+                    onClick = {
+                        navController.navigate("gameConfiguration") {
+                            popUpTo("startingPage") { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier.padding(vertical = 16.dp)
+                ) {
+                    Text(text = "Commencer", fontSize = 20.sp, color = textColor)
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "Première fois ?",
+                    fontSize = 18.sp,
+                    color = textColor,
+                    modifier = Modifier
+                        .clickable {
+                            firstClickDone = !firstClickDone
+                        }
+                        .onGloballyPositioned { coordinates ->
+                            textPosition = coordinates.positionInRoot()
+                        }
+                )
+
+                Spacer(modifier = Modifier.weight(1f)) // Ce spacer permet d'espacer le contenu principal
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "Première fois ?",
-                fontSize = 18.sp,
-                color = textColor,
-                modifier = Modifier
-                    .clickable {
-                        firstClickDone = !firstClickDone
-                    }
-                    .onGloballyPositioned { coordinates ->
-                        textPosition = coordinates.positionInRoot()
-                    }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
+            // Barre de tâches en bas
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .background(if (darkTheme) Color(0xFF34465B) else Color(0xFF1F2936)) // Bleu-gris foncé pour les deux thèmes
+                    .padding(16.dp)
+                    .align(Alignment.BottomCenter), // Alignement en bas de l'écran
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Icon(
                     imageVector = Icons.Outlined.MenuBook,
                     contentDescription = "Home",
-                    tint = iconColor,
+                    tint = (if (darkTheme) iconColor else Color.White),
                     modifier = Modifier
                         .size(50.dp)
                         .clickable {
@@ -130,7 +139,7 @@ fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Réglages",
-                    tint = iconColor,
+                    tint = (if (darkTheme) iconColor else Color.White),
                     modifier = Modifier
                         .size(50.dp)
                         .clickable {
@@ -140,43 +149,47 @@ fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
                         }
                 )
             }
-        }
 
-        if (firstClickDone) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                if (iconPosition != Offset.Zero) {
-                    drawCircle(
-                        color = Color(0xFFFFD700),
-                        radius = 30f * circleScale,  // Ajusté pour la taille de l'icône (TODO : a adapter)
-                        center = iconPosition + Offset(20f, 20f),  // Centré sur l'icône (TODO : a adapter)
-                        style = Stroke(width = 4f)
-                    )
-                }
-
-                if (textPosition != Offset.Zero && iconPosition != Offset.Zero) {
-                    val path = Path().apply {
-                        moveTo(textPosition.x + 60f, textPosition.y + 10f)
-                        quadraticBezierTo(
-                            (textPosition.x + iconPosition.x) / 2,
-                            (textPosition.y + iconPosition.y) / 2,
-                            iconPosition.x + 20f,
-                            iconPosition.y + 20f
+            if (firstClickDone) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    if (iconPosition != Offset.Zero) {
+                        drawCircle(
+                            color = Color(0xFFFFD700),
+                            radius = 30f * circleScale,  // Ajusté pour la taille de l'icône (TODO : a adapter)
+                            center = iconPosition + Offset(20f, 20f),  // Centré sur l'icône (TODO : a adapter)
+                            style = Stroke(width = 4f)
                         )
                     }
 
-                    drawPath(
-                        path = path,
-                        color = Color(0xFFFFD700),
-                        style = Stroke(
-                            width = 4f,
-                            pathEffect = PathEffect.dashPathEffect(
-                                intervals = floatArrayOf(30f, 30f),
-                                phase = arrowOffset * 60f
+                    if (textPosition != Offset.Zero && iconPosition != Offset.Zero) {
+                        val path = Path().apply {
+                            moveTo(textPosition.x + 60f, textPosition.y + 10f)
+                            quadraticBezierTo(
+                                (textPosition.x + iconPosition.x) / 2,
+                                (textPosition.y + iconPosition.y) / 2,
+                                iconPosition.x + 20f,
+                                iconPosition.y + 20f
+                            )
+                        }
+
+                        drawPath(
+                            path = path,
+                            color = Color(0xFFFFD700),
+                            style = Stroke(
+                                width = 4f,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    intervals = floatArrayOf(30f, 30f),
+                                    phase = arrowOffset * 60f
+                                )
                             )
                         )
-                    )
+                    }
                 }
             }
         }
+
     }
 }
+
+
+

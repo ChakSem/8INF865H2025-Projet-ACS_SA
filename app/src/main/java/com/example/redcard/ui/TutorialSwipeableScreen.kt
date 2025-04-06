@@ -2,6 +2,7 @@ package com.example.redcard.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -16,63 +17,82 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.RedCardTheme
+import com.example.redcard.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TutorialSwipeableScreen(navController: NavController) {
+fun TutorialSwipeableScreen(navController: NavController, themeViewModel: ThemeViewModel) {
     val pagerState = rememberPagerState(pageCount = { 8 }) // Nombre de pages
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Barre supérieure avec la croix pour fermer
-        Box(
+    // Obtenez le thème actuel via ThemeViewModel
+    val currentTheme by themeViewModel.theme.collectAsState()
+
+    // Déterminez si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
+    }
+
+    // Appliquez le thème (clair ou sombre) en utilisant RedCardTheme
+    RedCardTheme(darkTheme = darkTheme) {
+        // Toute la colonne et son contenu respectent le thème
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.TopEnd
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background) // Utilisation de la couleur de fond du thème
         ) {
-            IconButton(onClick = { navController.navigate("startingPage") }) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Fermer"
-                )
+            // Barre supérieure avec la croix pour fermer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                IconButton(onClick = { navController.navigate("startingPage") }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Fermer",
+                        tint = MaterialTheme.colorScheme.onBackground // Utilisation de la couleur du thème pour l'icône
+                    )
+                }
             }
-        }
 
-        // HorizontalPager pour swiper entre les pages
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f)
-        ) { page ->
-            when (page) {
-                0 -> FirstScreen()
-                1 -> SecondScreen()
-                2 -> ThirdScreen()
-                3 -> FourthScreen()
-                4 -> FifthScreen()
-                5 -> SixthScreen()
-                6 -> SeventhScreen()
-                7 -> EighthScreen()
-
+            // HorizontalPager pour swiper entre les pages
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f)
+            ) { page ->
+                when (page) {
+                    0 -> FirstScreen()
+                    1 -> SecondScreen()
+                    2 -> ThirdScreen()
+                    3 -> FourthScreen()
+                    4 -> FifthScreen()
+                    5 -> SixthScreen()
+                    6 -> SeventhScreen()
+                    7 -> EighthScreen()
+                }
             }
-        }
 
-        // Indicateurs de pages (points)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            repeat(8) { index ->
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .size(if (pagerState.currentPage == index) 12.dp else 8.dp)
-                        .clip(CircleShape)
-                        .background(if (pagerState.currentPage == index) Color.Black else Color.Gray)
-                )
+            // Indicateurs de pages (points)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(8) { index ->
+                    Box(
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(if (pagerState.currentPage == index) 12.dp else 8.dp)
+                            .clip(CircleShape)
+                            .background(if (pagerState.currentPage == index) Color.Red else Color.Gray)
+                    )
+                }
             }
         }
     }

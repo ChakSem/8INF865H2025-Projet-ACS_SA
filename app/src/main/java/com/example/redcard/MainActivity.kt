@@ -71,7 +71,7 @@ fun AppNavigation(themeViewModel: ThemeViewModel) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable("startingPage") { StartingPage(navController, themeViewModel) }
-        composable("gameConfiguration") { ConfigurationScreen(navController, context) }
+        composable("gameConfiguration") { ConfigurationScreen(navController, context, themeViewModel) }
         composable("generalSettings") {
             GeneralSettingScreen(navController, dataStoreManager, themeViewModel)
         }
@@ -82,7 +82,7 @@ fun AppNavigation(themeViewModel: ThemeViewModel) {
         composable("PlayerSetupScreen") {
             PlayerSetupScreen(navController, dataStoreManager)
         }
-        composable("TutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
+        composable("TutorialSwipeableScreen") { TutorialSwipeableScreen(navController, themeViewModel) }
         composable("PlayerWordDiscoverScreen") {
             PlayerWordDiscoverScreen(navController, dataStoreManager)
         }

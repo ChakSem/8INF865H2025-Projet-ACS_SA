@@ -3,6 +3,7 @@ package com.example.redcard.ui
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,10 +22,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.RedCardTheme
+import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun ConfigurationScreen(navController: NavController, context: Context) {
+fun ConfigurationScreen(navController: NavController, context: Context, themeViewModel: ThemeViewModel) {
     val dataStore = remember { DataStoreManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -55,163 +59,174 @@ fun ConfigurationScreen(navController: NavController, context: Context) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Icône et titre
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Home,
-                contentDescription = "Accueil",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable {
-                        navController.navigate("startingPage") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                    }
-            )
-            Text(
-                text = "Configuration",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = "Paramètres",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable {
-                        navController.navigate("generalSettings") {
-                            popUpTo("generalSettings") { inclusive = true }
-                        }
-                    }
-            )
-        }
+    // Obtenez le thème actuel via ThemeViewModel
+    val currentTheme by themeViewModel.theme.collectAsState()
 
-        // Compteur de joueurs
-        NumberSelector(
-            title = "Joueurs",
-            value = players,
-            footix = footix,
-            remplacants = remplacants,
-            onValueChange = { newValue ->
-                if (newValue in 3..20) {
-                    if (newValue > players) {
-                        // Ajout d'un joueur => ajoute un titulaire
-                        players = newValue
-                    } else if (newValue < players) {
-                        // Retrait d'un joueur
-                        val diff = players - newValue
-                        for (i in 1..diff) {
-                            if (titulaires > footix + remplacants) {
-                                // Si plus de titulaires que footix + remplacants, enlève un titulaire
-                                players--
-                            } else {
-                                // Sinon, regarde les remplaçants et les footix
-                                if (remplacants == footix && remplacants > 0) {
-                                    remplacants--
-                                } else if (remplacants > footix) {
-                                    remplacants--
-                                } else if (footix > 0) {
-                                    footix--
+    // Déterminez si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
+    }
+
+    // Appliquez le thème dynamique
+    RedCardTheme(darkTheme = darkTheme) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Icône et titre
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Home,
+                    contentDescription = "Accueil",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
+                            navController.navigate("startingPage") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }
+                )
+                Text(
+                    text = "Configuration",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Paramètres",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
+                            navController.navigate("generalSettings") {
+                                popUpTo("generalSettings") { inclusive = true }
+                            }
+                        }
+                )
+            }
+
+            // Compteur de joueurs
+            NumberSelector(
+                title = "Joueurs",
+                value = players,
+                footix = footix,
+                remplacants = remplacants,
+                onValueChange = { newValue ->
+                    if (newValue in 3..20) {
+                        if (newValue > players) {
+                            // Ajout d'un joueur => ajoute un titulaire
+                            players = newValue
+                        } else if (newValue < players) {
+                            // Retrait d'un joueur
+                            val diff = players - newValue
+                            for (i in 1..diff) {
+                                if (titulaires > footix + remplacants) {
+                                    // Si plus de titulaires que footix + remplacants, enlève un titulaire
+                                    players--
+                                } else {
+                                    // Sinon, regarde les remplaçants et les footix
+                                    if (remplacants == footix && remplacants > 0) {
+                                        remplacants--
+                                    } else if (remplacants > footix) {
+                                        remplacants--
+                                    } else if (footix > 0) {
+                                        footix--
+                                    }
+                                    players--
                                 }
-                                players--
                             }
                         }
                     }
                 }
-            }
-        )
+            )
 
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Section des rôles
+            Text(
+                text = "Les Rôles",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(bottom = 16.dp)
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            // Titulaires - Pas de modification possible
+            RoleDisplay(title = "Titulaire", value = titulaires)
 
-        // Section des rôles
-        Text(
-            text = "Les Rôles",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.Start)
-                .padding(bottom = 16.dp)
-        )
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Titulaires - Pas de modification possible
-        RoleDisplay(title = "Titulaire", value = titulaires)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Footix - Modification possible
-        NumberSelector(
-            title = "Footix",
-            value = footix,
-            footix = footix,
-            remplacants = remplacants,
-            onValueChange = { newValue ->
-                if (newValue >= 0 && newValue + remplacants <= players - (players + 1) / 2) {
-                    updateRoles(newValue, remplacants)
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Remplaçant - Modification possible
-        NumberSelector(
-            title = "Remplaçant",
-            value = remplacants,
-            footix = footix,
-            remplacants = remplacants,
-            onValueChange = { newValue ->
-                if (newValue >= 0 && newValue + footix <= players - (players + 1) / 2) {
-                    updateRoles(footix, newValue)
-                }
-            }
-        )
-
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Bouton Commencer
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    // Sauvegarde les valeurs dans le DataStore avant de naviguer
-                    dataStore.savePlayers(players)
-                    dataStore.saveTitulaires(titulaires)
-                    dataStore.saveFootix(footix)
-                    dataStore.saveRemplacants(remplacants)
-
-                    // Navigation vers la page suivante
-                    navController.navigate("GameIntroductionScreen") {
-                        popUpTo("GameIntroductionScreen") { inclusive = true }
+            // Footix - Modification possible
+            NumberSelector(
+                title = "Footix",
+                value = footix,
+                footix = footix,
+                remplacants = remplacants,
+                onValueChange = { newValue ->
+                    if (newValue >= 0 && newValue + remplacants <= players - (players + 1) / 2) {
+                        updateRoles(newValue, remplacants)
                     }
                 }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                text = "Commencer",
-                fontSize = 18.sp
             )
-        }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Remplaçant - Modification possible
+            NumberSelector(
+                title = "Remplaçant",
+                value = remplacants,
+                footix = footix,
+                remplacants = remplacants,
+                onValueChange = { newValue ->
+                    if (newValue >= 0 && newValue + footix <= players - (players + 1) / 2) {
+                        updateRoles(footix, newValue)
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Bouton Commencer
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        // Sauvegarde les valeurs dans le DataStore avant de naviguer
+                        dataStore.savePlayers(players)
+                        dataStore.saveTitulaires(titulaires)
+                        dataStore.saveFootix(footix)
+                        dataStore.saveRemplacants(remplacants)
+
+                        // Navigation vers la page suivante
+                        navController.navigate("GameIntroductionScreen") {
+                            popUpTo("GameIntroductionScreen") { inclusive = true }
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Commencer",
+                    fontSize = 18.sp
+                )
+            }
+
+        }
     }
 }
+
 
 // Composant pour afficher les rôles non modifiables
 @Composable
@@ -300,6 +315,7 @@ fun ConfigurationScreenPreview() {
     val context = LocalContext.current
     ConfigurationScreen(
         navController = rememberNavController(),
-        context = context
+        context = context,
+        themeViewModel = ThemeViewModel()
     )
 }

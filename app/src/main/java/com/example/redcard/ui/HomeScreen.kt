@@ -115,7 +115,7 @@ fun HomeScreen(
                 exit = fadeOut(animationSpec = tween(700))  // Disparition douce
             ) {
                 Text(
-                    text = "COMMENCER",
+                    text = "APPUYEZ",
                     fontSize = 30.sp, // Texte plus gros
                     fontWeight = FontWeight.Bold,
                     color = Color.White, // Texte en blanc
