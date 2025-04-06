@@ -47,7 +47,7 @@ fun GameIntroductionScreen(
 
             Button(
                 onClick = {
-                    navController.navigate("ChoosePlayerBallScreen") // Replace with your destination
+                    navController.navigate("ChoosePlayerBallScreen")
                 },
                 modifier = Modifier
                     .fillMaxWidth()
