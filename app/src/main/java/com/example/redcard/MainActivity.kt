@@ -4,9 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.model.FirestoreManager
 import com.example.redcard.ui.ChoosePlayerBallScreen
@@ -37,12 +40,11 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current // Récupération du contexte
-    val dataStoreManager = DataStoreManager(context) // Création de l'instance DataStoreManager
-    val firestoreManager = FirestoreManager(context) // Création de l'instance FirestoreManager
+    val dataStoreManager = remember { DataStoreManager(context) } // Création de l'instance DataStoreManager
+    val firestoreManager = remember { FirestoreManager(context) } // Création de l'instance FirestoreManager
 
     NavHost(navController = navController, startDestination = "home") {
-        composable("home") { HomeScreen(navController) }
-        //GameIntroductionScreen
+        composable("home") { HomeScreen(navController, dataStoreManager) }
         composable("startingPage") { StartingPage(navController) }
         composable("gameConfiguration") { ConfigurationScreen(navController, context) }
         composable("generalSettings") { GeneralSettingScreen(navController, dataStoreManager) }
@@ -60,11 +62,25 @@ fun AppNavigation() {
         composable("gameScreen") { GameScreen(navController) }
         composable("voteScreen") { VoteScreen(navController) }
         composable("victoryScreen") { VictoryScreen(navController) }
+        composable(
+            route = "ChoosePlayerBallScreen?refresh={refresh}",
+            arguments = listOf(
+                navArgument("refresh") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            val refresh = backStackEntry.arguments?.getBoolean("refresh") ?: false
+            ChoosePlayerBallScreen(navController, dataStoreManager)
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen(navController = rememberNavController(), onSettingsClick = {})
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+    HomeScreen(navController = rememberNavController(), dataStoreManager = dataStoreManager)
 }
