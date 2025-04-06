@@ -59,7 +59,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
         }
     }
 
-    // Obtenez le thème actuel via ThemeViewModel
+    // Obtenir le thème actuel via ThemeViewModel
     val currentTheme by themeViewModel.theme.collectAsState()
 
     // Déterminez si le thème est sombre ou clair
@@ -68,12 +68,17 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
         AppTheme.CLAIR -> false
         AppTheme.SYSTEME -> isSystemInDarkTheme()
     }
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val iconColor = if (darkTheme) Color.White else Color.Black // Icônes blanches si thème clair, sinon couleur par défaut
+
 
     // Appliquez le thème dynamique
     RedCardTheme(darkTheme = darkTheme) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(backgroundColor)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -99,6 +104,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 Text(
                     text = "Configuration",
                     fontSize = 24.sp,
+                    color = textColor,
                     fontWeight = FontWeight.Bold
                 )
                 Icon(
@@ -156,6 +162,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 text = "Les Rôles",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium,
+                color = textColor,
                 modifier = Modifier
                     .align(Alignment.Start)
                     .padding(bottom = 16.dp)

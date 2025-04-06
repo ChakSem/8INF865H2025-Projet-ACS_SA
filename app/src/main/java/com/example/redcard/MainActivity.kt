@@ -75,7 +75,7 @@ fun AppNavigation(themeViewModel: ThemeViewModel) {
         composable("generalSettings") {
             GeneralSettingScreen(navController, dataStoreManager, themeViewModel)
         }
-        composable("GameIntroductionScreen") { GameIntroductionScreen(navController) }
+        composable("GameIntroductionScreen") { GameIntroductionScreen(navController, themeViewModel) }
         composable("ChoosePlayerBallScreen") {
             ChoosePlayerBallScreen(navController, dataStoreManager)
         }
