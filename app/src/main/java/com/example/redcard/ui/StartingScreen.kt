@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import com.example.redcard.R
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
@@ -90,7 +91,17 @@ fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(400.dp))
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Image(
+                    painter = painterResource(id = R.drawable.redcard_logo),
+                    contentDescription = "Logo Red Card",
+                    modifier = Modifier
+                        .width(350.dp)
+                        .height(350.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
