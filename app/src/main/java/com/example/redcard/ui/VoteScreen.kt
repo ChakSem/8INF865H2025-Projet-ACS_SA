@@ -1,48 +1,91 @@
 package com.example.redcard.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.edit
 import androidx.navigation.NavController
-import com.example.redcard.R
+import coil.compose.rememberAsyncImagePainter
+import com.example.redcard.data.DataStoreManager
+import com.example.redcard.data.Player
+import com.example.redcard.data.dataStore
+import kotlinx.coroutines.launch
 
 @Composable
 fun VoteScreen(
     navController: NavController,
+    dataStoreManager: DataStoreManager
 ) {
-    var selectedProfile by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var selectedPlayer by remember { mutableStateOf<Player?>(null) }
+
+    // Récupérer les joueurs enregistrés
+    val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
+
+    // Filtrer les joueurs non titulaires (ceux qui peuvent être éliminés)
+    val eliminablePlayers = registeredPlayers
+
+
+    // Analyser les joueurs par rôle pour déterminer l'état du jeu
+    val footixCount = remember(registeredPlayers) {
+        registeredPlayers.count { it.role == "Footix" }
+    }
+
+    val remplacantCount = remember(registeredPlayers) {
+        registeredPlayers.count { it.role == "Remplaçant" }
+    }
+
+    val gameCanContinue = remember(footixCount, remplacantCount) {
+        footixCount > 0 || remplacantCount > 0
+    }
+
+    // Fonction pour éliminer un joueur
+    fun eliminatePlayer() {
+        selectedPlayer?.let { player ->
+            scope.launch {
+                // Créer une nouvelle liste sans le joueur sélectionné
+                val updatedPlayers = registeredPlayers.filter { it.id != player.id }
+
+                // Mettre à jour le DataStore
+                context.dataStore.edit { preferences ->
+                    val playersJson = kotlinx.serialization.json.Json.encodeToString(
+                        kotlinx.serialization.builtins.ListSerializer(Player.serializer()),
+                        updatedPlayers
+                    )
+                    preferences[DataStoreManager.REGISTERED_PLAYERS_KEY] = playersJson
+                }
+
+                // Vérifier si la partie peut continuer après l'élimination
+                if (updatedPlayers.none { it.role == "Footix" || it.role == "Remplaçant" }) {
+                    // Si plus de Footix ni Remplaçants, passage à l'écran de victoire
+                    navController.navigate("victoryScreen")
+                } else {
+                    // Sinon, retour à l'écran de jeu
+                    navController.navigate("gameScreen")
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -54,7 +97,7 @@ fun VoteScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp),
+                .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -66,11 +109,19 @@ fun VoteScreen(
                 }
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Home, // Icône Home de Google Fonts
+                    imageVector = Icons.Filled.Home,
                     contentDescription = "Accueil",
                     modifier = Modifier.size(40.dp)
                 )
             }
+
+            // Afficher les compteurs de rôles
+            Text(
+                text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
+                        "Remplaçants: $remplacantCount | " +
+                        "Footix: $footixCount",
+                fontSize = 14.sp
+            )
 
             IconButton(
                 onClick = {
@@ -86,101 +137,167 @@ fun VoteScreen(
         }
 
         // Cadran avec le texte
-        Box(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
-                .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
+                .padding(bottom = 16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Text(
                 text = "Qui voulez-vous éliminer ?",
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
             )
         }
 
-        // Liste des profils
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        // Liste des joueurs pouvant être éliminés
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val profiles = listOf("Joueur 1", "Joueur 2", "Joueur 3")
-
-            profiles.forEach { profile ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            selectedProfile = if (selectedProfile == profile) {
-                                null // Désélectionner si c'est déjà sélectionné
-                            } else {
-                                profile // Sélectionner un profil
-                            }
-                        }
-                        .padding(16.dp)
-                        .background(
-                            if (selectedProfile == profile) Color.Green.copy(alpha = 0.3f) else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Profil avec cercle plus grand
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp) // Augmentation de la taille des cercles
-                            .background(Color.Gray, shape = CircleShape)
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Text(
-                        text = profile,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Icône de vérification si le profil est sélectionné
-                    if (selectedProfile == profile) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = "Profil sélectionné",
-                            tint = Color.Green
-                        )
-                    }
-                }
+            items(eliminablePlayers) { player ->
+                PlayerVoteItem(
+                    player = player,
+                    isSelected = selectedPlayer?.id == player.id,
+                    onPlayerSelected = { selectedPlayer = player }
+                )
             }
         }
 
-        // Row avec les boutons Confirmer et Annuler
+        // Afficher un message si aucun joueur éliminable n'est disponible
+        if (eliminablePlayers.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Pas de joueurs à éliminer !",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+
+        // Boutons d'action
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Bouton Confirmer
-            Button(
-                onClick = {
-                    navController.navigate("victoryScreen")
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = "Confirmer")
-            }
-
             // Bouton Annuler
-            Button(
+            OutlinedButton(
                 onClick = {
-                    navController.navigate("gameScreen")
+                    navController.navigateUp()
                 },
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "Annuler")
             }
+
+            // Bouton Confirmer
+            Button(
+                onClick = {
+                    eliminatePlayer()
+                },
+                modifier = Modifier.weight(1f),
+                enabled = selectedPlayer != null
+            ) {
+                Text(text = "Confirmer")
+            }
         }
     }
 }
 
+@Composable
+fun PlayerVoteItem(
+    player: Player,
+    isSelected: Boolean,
+    onPlayerSelected: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onPlayerSelected() }
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Photo du joueur ou avatar
+            if (player.photoUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = player.photoUri),
+                    contentDescription = "Photo de ${player.name}",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            color = when (player.role) {
+                                "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
+                                "Footix" -> Color.Yellow.copy(alpha = 0.7f)
+                                else -> Color.Gray
+                            },
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Joueur",
+                        tint = Color.White,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+
+            // Informations du joueur
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
+            ) {
+                Text(
+                    text = player.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Icône de sélection
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = "Sélectionné",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
