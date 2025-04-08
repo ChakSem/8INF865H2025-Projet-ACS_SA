@@ -65,7 +65,7 @@ fun TutorialSwipeableScreen(navController: NavController, themeViewModel: ThemeV
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Fermer",
-                        tint = MaterialTheme.colorScheme.onBackground // Utilisation de la couleur du thème pour l'icône
+                        tint = Color.White
                     )
                 }
             }
