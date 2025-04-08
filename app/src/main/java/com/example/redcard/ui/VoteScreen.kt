@@ -50,6 +50,10 @@ fun VoteScreen(
     // Filtrer les joueurs non titulaires (ceux qui peuvent être éliminés)
     val eliminablePlayers = registeredPlayers
 
+    // Compter les joueurs par rôle
+    val titulaireCount = remember(registeredPlayers) {
+        registeredPlayers.count { it.role == "Titulaire" }
+    }
 
     // Analyser les joueurs par rôle pour déterminer l'état du jeu
     val footixCount = remember(registeredPlayers) {
@@ -60,8 +64,13 @@ fun VoteScreen(
         registeredPlayers.count { it.role == "Remplaçant" }
     }
 
-    val gameCanContinue = remember(footixCount, remplacantCount) {
-        footixCount > 0 || remplacantCount > 0
+    // Compter les imposteurs (Remplaçants + Footix)
+    val impostorCount = remember(footixCount, remplacantCount) {
+        footixCount + remplacantCount
+    }
+
+    val gameCanContinue = remember(titulaireCount, impostorCount) {
+        titulaireCount > 0 && impostorCount > 0
     }
 
     // Fonction pour éliminer un joueur
@@ -80,9 +89,15 @@ fun VoteScreen(
                     preferences[DataStoreManager.REGISTERED_PLAYERS_KEY] = playersJson
                 }
 
-                // Vérifier si la partie peut continuer après l'élimination
-                if (updatedPlayers.none { it.role == "Footix" || it.role == "Remplaçant" }) {
-                    // Si plus de Footix ni Remplaçants, passage à l'écran de victoire
+                // Vérifier l'état du jeu après l'élimination
+                val newTitulaireCount = updatedPlayers.count { it.role == "Titulaire" }
+                val newFootixCount = updatedPlayers.count { it.role == "Footix" }
+                val newRemplacantCount = updatedPlayers.count { it.role == "Remplaçant" }
+                val newImpostorCount = newFootixCount + newRemplacantCount
+
+                // Cas de victoire
+                if (newTitulaireCount == 0 || newImpostorCount == 0 || updatedPlayers.isEmpty()) {
+                    // Passage à l'écran de victoire
                     navController.navigate("victoryScreen")
                 } else {
                     // Sinon, retour à l'écran de jeu
@@ -136,13 +151,13 @@ fun VoteScreen(
                     )
                 }
 
-                // Afficher les compteurs de rôles
-                Text(
-                    text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
-                            "Remplaçants: $remplacantCount | " +
-                            "Footix: $footixCount",
-                    fontSize = 14.sp
-                )
+            // Afficher les compteurs de rôles
+            Text(
+                text = "Titulaires: $titulaireCount | " +
+                        "Remplaçants: $remplacantCount | " +
+                        "Footix: $footixCount",
+                fontSize = 14.sp
+            )
 
                 IconButton(
                     onClick = {
@@ -174,54 +189,54 @@ fun VoteScreen(
                 )
             }
 
-            // Liste des joueurs pouvant être éliminés
-            LazyColumn(
+        // Liste des joueurs pouvant être éliminés
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(eliminablePlayers) { player ->
+                PlayerVoteItem(
+                    player = player,
+                    isSelected = selectedPlayer?.id == player.id,
+                    onPlayerSelected = { selectedPlayer = player }
+                )
+            }
+        }
+
+        // Afficher un message si aucun joueur éliminable n'est disponible
+        if (eliminablePlayers.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                items(eliminablePlayers) { player ->
-                    PlayerVoteItem(
-                        player = player,
-                        isSelected = selectedPlayer?.id == player.id,
-                        onPlayerSelected = { selectedPlayer = player }
-                    )
-                }
+                Text(
+                    text = "Pas de joueurs à éliminer !",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
+        }
 
-            // Afficher un message si aucun joueur éliminable n'est disponible
-            if (eliminablePlayers.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Pas de joueurs à éliminer !",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            // Boutons d'action
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        // Boutons d'action
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Bouton Annuler
+            OutlinedButton(
+                onClick = {
+                    navController.navigateUp()
+                },
+                modifier = Modifier.weight(1f)
             ) {
-                // Bouton Annuler
-                OutlinedButton(
-                    onClick = {
-                        navController.navigateUp()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = "Annuler")
-                }
+                Text(text = "Annuler")
+            }
 
                 // Bouton Confirmer
                 Button(
@@ -282,6 +297,7 @@ fun PlayerVoteItem(
                         .size(60.dp)
                         .background(
                             color = when (player.role) {
+                                "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
                                 "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
                                 "Footix" -> Color.Yellow.copy(alpha = 0.7f)
                                 else -> Color.Gray
