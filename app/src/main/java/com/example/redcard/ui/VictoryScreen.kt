@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
+import com.example.redcard.model.MusicPlayerManager
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -96,6 +97,12 @@ fun VictoryScreen(
     val backgroundColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
     val iconColor = if (darkTheme) Color.White else Color.Black
+
+    // Musique de fond
+
+    LaunchedEffect(Unit) {
+        MusicPlayerManager.playMusicVictory(context)
+    }
 
     Column(
         modifier = Modifier
@@ -365,7 +372,7 @@ fun VictoryScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        // Reset uniquement les joueurs mais garde les configurations
+                        MusicPlayerManager.playMusicSalon(context) // 🎵 Lancer la musique d'intro
                         dataStoreManager.resetGame()
                         navController.navigate("ChoosePlayerBallScreen")
                     }
@@ -379,6 +386,7 @@ fun VictoryScreen(
                 )
                 Text(text = "Rejouer")
             }
+
 
             // Bouton Retour à l'accueil
             OutlinedButton(
