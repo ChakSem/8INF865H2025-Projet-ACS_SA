@@ -168,10 +168,10 @@ fun PlayerSetupScreen(
             return
         }
 
-        if (currentPhotoUri == null) {
-            errorMessage = "Veuillez prendre une photo"
-            return
-        }
+//        if (currentPhotoUri == null) {
+//            errorMessage = "Veuillez prendre une photo"
+//            return
+//        }
 
         isSubmitting = true
         errorMessage = null
@@ -223,7 +223,7 @@ fun PlayerSetupScreen(
             confirmButton = {
                 Button(
                     onClick = { registerPlayer() },
-                    enabled = !isSubmitting && playerName.isNotBlank() && !isPlayerNameTaken && currentPhotoUri != null
+                    enabled = !isSubmitting && playerName.isNotBlank() && !isPlayerNameTaken
                 ) {
                     if (isSubmitting) {
                         CircularProgressIndicator(
@@ -336,10 +336,11 @@ fun PlayerSetupScreen(
             Button(
                 onClick = { showWordDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = playerName.isNotBlank() && currentPhotoUri != null && !isPlayerNameTaken
+                enabled = playerName.isNotBlank() && !isPlayerNameTaken
             ) {
                 Text("Voir mon mot secret")
             }
+
         }
     }
 }

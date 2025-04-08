@@ -2,6 +2,7 @@ package com.example.redcard.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +22,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.edit
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.rememberAsyncImagePainter
@@ -198,16 +201,24 @@ fun RegisteredPlayerItem(
                 painter = rememberAsyncImagePainter(model = player.photoUri),
                 contentDescription = "Photo de ${player.name}",
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(80.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "Joueur",
-                modifier = Modifier.size(56.dp)
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF2C65EA)) // Fond bleu
+            ) {
+                Text(
+                    text = player.name.first().toString(),
+                    fontSize = 40.sp,
+                    color = Color.White,
+                )
+            }
         }
         Text(
             text = player.name,
@@ -216,6 +227,7 @@ fun RegisteredPlayerItem(
         )
     }
 }
+
 
 @Composable
 fun FootballBallButton(

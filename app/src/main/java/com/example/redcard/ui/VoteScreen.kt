@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,12 +29,16 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
 import com.example.redcard.data.dataStore
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.RedCardTheme
+import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun VoteScreen(
     navController: NavController,
-    dataStoreManager: DataStoreManager
+    dataStoreManager: DataStoreManager,
+    themeViewModel: ThemeViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -87,130 +92,147 @@ fun VoteScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Row en haut avec la maison et les réglages
-        Row(
+    // Observer le thème actuel
+    val currentTheme by themeViewModel.theme.collectAsState()
+
+    // Déterminer si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+    }
+
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val iconColor = if (darkTheme) Color.White else Color.Black
+
+    RedCardTheme(darkTheme = darkTheme) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .background(backgroundColor)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
-                onClick = {
-                    navController.navigate("startingPage") {
-                        popUpTo("startingPage") { inclusive = true }
-                    }
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Accueil",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            // Afficher les compteurs de rôles
-            Text(
-                text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
-                        "Remplaçants: $remplacantCount | " +
-                        "Footix: $footixCount",
-                fontSize = 14.sp
-            )
-
-            IconButton(
-                onClick = {
-                    navController.navigate("generalSettings")
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Réglages",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-        }
-
-        // Cadran avec le texte
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Text(
-                text = "Qui voulez-vous éliminer ?",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
-            )
-        }
-
-        // Liste des joueurs pouvant être éliminés
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(eliminablePlayers) { player ->
-                PlayerVoteItem(
-                    player = player,
-                    isSelected = selectedPlayer?.id == player.id,
-                    onPlayerSelected = { selectedPlayer = player }
-                )
-            }
-        }
-
-        // Afficher un message si aucun joueur éliminable n'est disponible
-        if (eliminablePlayers.isEmpty()) {
-            Box(
+            // Row en haut avec la maison et les réglages
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        navController.navigate("startingPage") {
+                            popUpTo("startingPage") { inclusive = true }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Accueil",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                // Afficher les compteurs de rôles
+                Text(
+                    text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
+                            "Remplaçants: $remplacantCount | " +
+                            "Footix: $footixCount",
+                    fontSize = 14.sp
+                )
+
+                IconButton(
+                    onClick = {
+                        navController.navigate("generalSettings")
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Réglages",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+
+            // Cadran avec le texte
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Text(
-                    text = "Pas de joueurs à éliminer !",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.error
+                    text = "Qui voulez-vous éliminer ?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
                 )
             }
-        }
 
-        // Boutons d'action
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Bouton Annuler
-            OutlinedButton(
-                onClick = {
-                    navController.navigateUp()
-                },
-                modifier = Modifier.weight(1f)
+            // Liste des joueurs pouvant être éliminés
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "Annuler")
+                items(eliminablePlayers) { player ->
+                    PlayerVoteItem(
+                        player = player,
+                        isSelected = selectedPlayer?.id == player.id,
+                        onPlayerSelected = { selectedPlayer = player }
+                    )
+                }
             }
 
-            // Bouton Confirmer
-            Button(
-                onClick = {
-                    eliminatePlayer()
-                },
-                modifier = Modifier.weight(1f),
-                enabled = selectedPlayer != null
+            // Afficher un message si aucun joueur éliminable n'est disponible
+            if (eliminablePlayers.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Pas de joueurs à éliminer !",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            // Boutons d'action
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(text = "Confirmer")
+                // Bouton Annuler
+                OutlinedButton(
+                    onClick = {
+                        navController.navigateUp()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(text = "Annuler")
+                }
+
+                // Bouton Confirmer
+                Button(
+                    onClick = {
+                        eliminatePlayer()
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = selectedPlayer != null
+                ) {
+                    Text(text = "Confirmer")
+                }
             }
         }
     }
@@ -235,7 +257,7 @@ fun PlayerVoteItem(
             containerColor = if (isSelected)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             else
-                MaterialTheme.colorScheme.surface
+                Color.LightGray.copy(alpha = 0.2f)
         )
     ) {
         Row(
