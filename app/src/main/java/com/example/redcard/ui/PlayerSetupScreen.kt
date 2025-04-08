@@ -26,6 +26,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOf
+
 
 @Composable
 fun PlayerSetupScreen(
@@ -49,8 +51,16 @@ fun PlayerSetupScreen(
     var showWordDialog by remember { mutableStateOf(false) }
 
     // Vérifier si un joueur a déjà ce nom
-    val isPlayerNameTaken by dataStoreManager.isPlayerNameTakenFlow.collectAsState(initial = false)
+    // Définir d'abord le flow
+    val playerNameTakenFlow = if (playerName.isBlank()) {
+        // Flow qui émet toujours false
+        flowOf(false)
+    } else {
+        dataStoreManager.isPlayerNameTakenFlow(playerName)
+    }
 
+    // Puis collecter le state de ce flow directement dans le contexte Composable
+    val isPlayerNameTaken by playerNameTakenFlow.collectAsState(initial = false)
     // État pour gérer les erreurs et le chargement
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -59,6 +69,19 @@ fun PlayerSetupScreen(
         savedPhotoUri?.let {
             currentPhotoUri = Uri.parse(it)
         }
+    }
+    LaunchedEffect(Unit) {
+        // Réinitialiser les valeurs à chaque fois que l'écran est affiché
+        playerName = ""
+        currentPhotoUri = null
+        errorMessage = null
+        isSubmitting = false
+        photoTimestamp = System.currentTimeMillis() // Force recomposition pour l'image
+        
+        // Réinitialiser également la valeur dans le DataStore si nécessaire
+        dataStoreManager.resetPlayerPhoto()
+        dataStoreManager.resetPlayerName()
+
     }
 
     var hasCameraPermission by remember {
@@ -152,22 +175,24 @@ fun PlayerSetupScreen(
 
         isSubmitting = true
         errorMessage = null
-
         scope.launch {
-            try {
-                // Enregistrer le joueur dans la liste
-                dataStoreManager.registerPlayer(playerName, currentPhotoUri?.toString())
+                try {
+                    // Sauvegarder le nom du joueur pour la page suivante
+                    dataStoreManager.savePlayerName(playerName)
 
-                // Donner le temps au DataStore de mettre à jour ses données
-                delay(500)
+                    // Enregistrer le joueur avec son rôle et son mot
+                    dataStoreManager.registerPlayer(playerName, currentPhotoUri?.toString())
 
-                withContext(Dispatchers.Main) {
-                    // Naviguer vers l'écran précédent avec instruction de rafraîchir
-                    navController.navigate("ChoosePlayerBallScreen?refresh=true") {
-                        popUpTo("ChoosePlayerBallScreen") { inclusive = true }
+                    // Donner le temps au DataStore de mettre à jour ses données
+                    delay(500)
+
+                    // Forcer un rafraîchissement après navigation
+                    withContext(Dispatchers.Main) {
+                        navController.navigate("ChoosePlayerBallScreen") {
+                            popUpTo("ChoosePlayerBallScreen") { inclusive = true }
+                        }
                     }
-                }
-            } catch (e: Exception) {
+                }catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     errorMessage = "Erreur lors de l'enregistrement: ${e.message}"
                     isSubmitting = false
@@ -186,12 +211,12 @@ fun PlayerSetupScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Tu es un ${currentRole ?: "joueur"}")
                     if (currentBall != null) {
                         Text("Ton mot secret est: $currentBall")
                         Text("Mémorise-le bien et ne le montre à personne !")
                     } else {
-                        Text("Tu es remplaçant pour cette partie.")
+                        Text("Tu est le Footix !")
+                        Text("Tu dois deviner le mot secret des autres joueurs.")
                     }
                 }
             },
