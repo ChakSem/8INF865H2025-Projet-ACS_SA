@@ -55,9 +55,9 @@ fun AppNavigation() {
             PlayerSetupScreen(navController, dataStoreManager)
         }
         composable("TutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
-        composable("gameScreen") { GameScreen(navController) }
-        composable("voteScreen") { VoteScreen(navController) }
-        composable("victoryScreen") { VictoryScreen(navController) }
+        composable("gameScreen") { GameScreen(navController,dataStoreManager) }
+        composable("voteScreen") { VoteScreen(navController,dataStoreManager) }
+        composable("victoryScreen") { VictoryScreen(navController,dataStoreManager) }
         composable(
             route = "ChoosePlayerBallScreen?refresh={refresh}",
             arguments = listOf(
