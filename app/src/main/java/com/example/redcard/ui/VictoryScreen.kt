@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -25,12 +26,16 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
+import com.example.redcard.model.MusicPlayerManager
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun VictoryScreen(
     navController: NavController,
-    dataStoreManager: DataStoreManager
+    dataStoreManager: DataStoreManager,
+    themeViewModel: ThemeViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -79,9 +84,30 @@ fun VictoryScreen(
         }
     }
 
+    // Observer le thème actuel
+    val currentTheme by themeViewModel.theme.collectAsState()
+
+    // Déterminer si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+    }
+
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val iconColor = if (darkTheme) Color.White else Color.Black
+
+    // Musique de fond
+
+    LaunchedEffect(Unit) {
+        MusicPlayerManager.playMusicVictory(context)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(backgroundColor)
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -346,7 +372,7 @@ fun VictoryScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        // Reset uniquement les joueurs mais garde les configurations
+                        MusicPlayerManager.playMusicSalon(context) // 🎵 Lancer la musique d'intro
                         dataStoreManager.resetGame()
                         navController.navigate("ChoosePlayerBallScreen")
                     }
@@ -360,6 +386,7 @@ fun VictoryScreen(
                 )
                 Text(text = "Rejouer")
             }
+
 
             // Bouton Retour à l'accueil
             OutlinedButton(

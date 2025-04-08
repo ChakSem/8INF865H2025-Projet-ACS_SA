@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,12 +29,16 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
 import com.example.redcard.data.dataStore
+import com.example.redcard.ui.theme.AppTheme
+import com.example.redcard.ui.theme.RedCardTheme
+import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun VoteScreen(
     navController: NavController,
-    dataStoreManager: DataStoreManager
+    dataStoreManager: DataStoreManager,
+    themeViewModel: ThemeViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -50,6 +55,7 @@ fun VoteScreen(
         registeredPlayers.count { it.role == "Titulaire" }
     }
 
+    // Analyser les joueurs par rôle pour déterminer l'état du jeu
     val footixCount = remember(registeredPlayers) {
         registeredPlayers.count { it.role == "Footix" }
     }
@@ -101,33 +107,49 @@ fun VoteScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Row en haut avec la maison et les réglages
-        Row(
+    // Observer le thème actuel
+    val currentTheme by themeViewModel.theme.collectAsState()
+
+    // Déterminer si le thème est sombre ou clair
+    val darkTheme = when (currentTheme) {
+        AppTheme.SOMBRE -> true
+        AppTheme.CLAIR -> false
+        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+    }
+
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val iconColor = if (darkTheme) Color.White else Color.Black
+
+    RedCardTheme(darkTheme = darkTheme) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .background(backgroundColor)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
-                onClick = {
-                    navController.navigate("startingPage") {
-                        popUpTo("startingPage") { inclusive = true }
-                    }
-                }
+            // Row en haut avec la maison et les réglages
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Accueil",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
+                IconButton(
+                    onClick = {
+                        navController.navigate("startingPage") {
+                            popUpTo("startingPage") { inclusive = true }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Accueil",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
 
             // Afficher les compteurs de rôles
             Text(
@@ -137,35 +159,35 @@ fun VoteScreen(
                 fontSize = 14.sp
             )
 
-            IconButton(
-                onClick = {
-                    navController.navigate("generalSettings")
+                IconButton(
+                    onClick = {
+                        navController.navigate("generalSettings")
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Réglages",
+                        modifier = Modifier.size(40.dp)
+                    )
                 }
+            }
+
+            // Cadran avec le texte
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Réglages",
-                    modifier = Modifier.size(40.dp)
+                Text(
+                    text = "Qui voulez-vous éliminer ?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
                 )
             }
-        }
-
-        // Cadran avec le texte
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Text(
-                text = "Qui voulez-vous éliminer ?",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
-            )
-        }
 
         // Liste des joueurs pouvant être éliminés
         LazyColumn(
@@ -216,15 +238,16 @@ fun VoteScreen(
                 Text(text = "Annuler")
             }
 
-            // Bouton Confirmer
-            Button(
-                onClick = {
-                    eliminatePlayer()
-                },
-                modifier = Modifier.weight(1f),
-                enabled = selectedPlayer != null
-            ) {
-                Text(text = "Confirmer")
+                // Bouton Confirmer
+                Button(
+                    onClick = {
+                        eliminatePlayer()
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = selectedPlayer != null
+                ) {
+                    Text(text = "Confirmer")
+                }
             }
         }
     }
@@ -249,7 +272,7 @@ fun PlayerVoteItem(
             containerColor = if (isSelected)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             else
-                MaterialTheme.colorScheme.surface
+                Color.LightGray.copy(alpha = 0.2f)
         )
     ) {
         Row(

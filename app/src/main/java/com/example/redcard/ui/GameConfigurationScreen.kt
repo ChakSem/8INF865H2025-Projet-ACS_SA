@@ -34,8 +34,8 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
 
     // État initial avec 3 joueurs : 2 titulaires, 1 footix, 0 remplacant
     var players by remember { mutableStateOf(3) }
-    var footix by remember { mutableStateOf(1) }
-    var remplacants by remember { mutableStateOf(0) }
+    var footix by remember { mutableStateOf(0) }
+    var remplacants by remember { mutableStateOf(1) }
 
     // Calcul dynamique des titulaires
     val titulaires by remember { derivedStateOf {
@@ -173,6 +173,21 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Remplaçant - Modification possible
+            NumberSelector(
+                title = "Remplaçant",
+                value = remplacants,
+                footix = footix,
+                remplacants = remplacants,
+                onValueChange = { newValue ->
+                    if (newValue >= 0 && newValue + footix <= players - (players + 1) / 2) {
+                        updateRoles(footix, newValue)
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Footix - Modification possible
             NumberSelector(
                 title = "Footix",
@@ -186,20 +201,6 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Remplaçant - Modification possible
-            NumberSelector(
-                title = "Remplaçant",
-                value = remplacants,
-                footix = footix,
-                remplacants = remplacants,
-                onValueChange = { newValue ->
-                    if (newValue >= 0 && newValue + footix <= players - (players + 1) / 2) {
-                        updateRoles(footix, newValue)
-                    }
-                }
-            )
 
             Spacer(modifier = Modifier.weight(1f))
 

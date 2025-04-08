@@ -101,9 +101,9 @@ fun AppNavigation(themeViewModel: ThemeViewModel) {
                 themeViewModel
             )
         }
-        composable("gameScreen") { GameScreen(navController, dataStoreManager) }
-        composable("voteScreen") { VoteScreen(navController, dataStoreManager) }
-        composable("victoryScreen") { VictoryScreen(navController, dataStoreManager) }
+        composable("gameScreen") { GameScreen(navController, dataStoreManager, themeViewModel) }
+        composable("voteScreen") { VoteScreen(navController, dataStoreManager, themeViewModel) }
+        composable("victoryScreen") { VictoryScreen(navController, dataStoreManager, themeViewModel) }
         composable(
             route = "ChoosePlayerBallScreen?refresh={refresh}",
             arguments = listOf(

@@ -22,6 +22,21 @@ object MusicPlayerManager {
         startNewMusic(context, R.raw.game)
     }
 
+    fun playMusicVictory(context: Context) {
+        stopMusic()
+        mediaPlayer = MediaPlayer.create(context, R.raw.victory).apply {
+            isLooping = false // ❌ ne pas boucler
+            start()
+            setOnCompletionListener {
+                stopMusic() // ou juste isPlaying = false si tu veux le garder
+            }
+        }
+        currentResId = R.raw.victory
+        isInitialized = true
+        isPlaying = true
+    }
+
+
     private fun startNewMusic(context: Context, resId: Int) {
         if (mediaPlayer == null || currentResId != resId) {
             stopMusic()
