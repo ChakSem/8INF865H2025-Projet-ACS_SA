@@ -45,8 +45,11 @@ fun VoteScreen(
     // Filtrer les joueurs non titulaires (ceux qui peuvent être éliminés)
     val eliminablePlayers = registeredPlayers
 
+    // Compter les joueurs par rôle
+    val titulaireCount = remember(registeredPlayers) {
+        registeredPlayers.count { it.role == "Titulaire" }
+    }
 
-    // Analyser les joueurs par rôle pour déterminer l'état du jeu
     val footixCount = remember(registeredPlayers) {
         registeredPlayers.count { it.role == "Footix" }
     }
@@ -55,8 +58,13 @@ fun VoteScreen(
         registeredPlayers.count { it.role == "Remplaçant" }
     }
 
-    val gameCanContinue = remember(footixCount, remplacantCount) {
-        footixCount > 0 || remplacantCount > 0
+    // Compter les imposteurs (Remplaçants + Footix)
+    val impostorCount = remember(footixCount, remplacantCount) {
+        footixCount + remplacantCount
+    }
+
+    val gameCanContinue = remember(titulaireCount, impostorCount) {
+        titulaireCount > 0 && impostorCount > 0
     }
 
     // Fonction pour éliminer un joueur
@@ -75,9 +83,15 @@ fun VoteScreen(
                     preferences[DataStoreManager.REGISTERED_PLAYERS_KEY] = playersJson
                 }
 
-                // Vérifier si la partie peut continuer après l'élimination
-                if (updatedPlayers.none { it.role == "Footix" || it.role == "Remplaçant" }) {
-                    // Si plus de Footix ni Remplaçants, passage à l'écran de victoire
+                // Vérifier l'état du jeu après l'élimination
+                val newTitulaireCount = updatedPlayers.count { it.role == "Titulaire" }
+                val newFootixCount = updatedPlayers.count { it.role == "Footix" }
+                val newRemplacantCount = updatedPlayers.count { it.role == "Remplaçant" }
+                val newImpostorCount = newFootixCount + newRemplacantCount
+
+                // Cas de victoire
+                if (newTitulaireCount == 0 || newImpostorCount == 0 || updatedPlayers.isEmpty()) {
+                    // Passage à l'écran de victoire
                     navController.navigate("victoryScreen")
                 } else {
                     // Sinon, retour à l'écran de jeu
@@ -117,7 +131,7 @@ fun VoteScreen(
 
             // Afficher les compteurs de rôles
             Text(
-                text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
+                text = "Titulaires: $titulaireCount | " +
                         "Remplaçants: $remplacantCount | " +
                         "Footix: $footixCount",
                 fontSize = 14.sp
@@ -260,6 +274,7 @@ fun PlayerVoteItem(
                         .size(60.dp)
                         .background(
                             color = when (player.role) {
+                                "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
                                 "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
                                 "Footix" -> Color.Yellow.copy(alpha = 0.7f)
                                 else -> Color.Gray

@@ -38,20 +38,29 @@ fun VictoryScreen(
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
 
-    // Filtrer les joueurs par rôle pour afficher les gagnants (titulaires restants)
+    // Filtrer les joueurs par rôle
     val titulairePlayers = remember(registeredPlayers) {
         registeredPlayers.filter { it.role == "Titulaire" }
     }
 
+    val remplacantPlayers = remember(registeredPlayers) {
+        registeredPlayers.filter { it.role == "Remplaçant" }
+    }
+
+    val footixPlayers = remember(registeredPlayers) {
+        registeredPlayers.filter { it.role == "Footix" }
+    }
+
+    // Compter les imposteurs (Remplaçants + Footix)
+    val impostorCount = remplacantPlayers.size + footixPlayers.size
+
     // Déterminer les vainqueurs en fonction des joueurs restants
-    val winners = if (titulairePlayers.isNotEmpty()) {
-        "Les Titulaires"
-    } else if (registeredPlayers.any { it.role == "Remplaçant" }) {
-        "Les Remplaçants"
-    } else if (registeredPlayers.any { it.role == "Footix" }) {
-        "Les Footix"
-    } else {
-        "Personne"
+    val winners = when {
+        titulairePlayers.isNotEmpty() && impostorCount == 0 -> "Les Titulaires"
+        titulairePlayers.isEmpty() && remplacantPlayers.isNotEmpty() && footixPlayers.isEmpty() -> "Les Remplaçants"
+        titulairePlayers.isEmpty() && remplacantPlayers.isEmpty() && footixPlayers.isNotEmpty() -> "Les Footix"
+        titulairePlayers.isEmpty() && impostorCount > 0 -> "Les Imposteurs" // Cas où les remplaçants ET footix restent
+        else -> "Personne"
     }
 
     // Récupérer le mot secret des titulaires
@@ -161,6 +170,28 @@ fun VictoryScreen(
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+
+                // Si les imposteurs ont gagné, afficher un message spécial
+                if (winners == "Les Imposteurs") {
+                    Text(
+                        text = "Les Remplaçants et les Footix ont unis leurs forces !",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+
+                    // Afficher aussi le mot secret des titulaires qu'ils ont réussi à éliminer
+                    titulaireWord?.let { word ->
+                        Text(
+                            text = "Le mot secret des titulaires était: $word",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
                 }
@@ -279,14 +310,22 @@ fun VictoryScreen(
                 )
 
                 Text(
-                    text = "Remplaçants: ${registeredPlayers.count { it.role == "Remplaçant" }}",
+                    text = "Remplaçants: ${remplacantPlayers.size}",
                     fontSize = 14.sp
                 )
 
                 Text(
-                    text = "Footix: ${registeredPlayers.count { it.role == "Footix" }}",
+                    text = "Footix: ${footixPlayers.size}",
                     fontSize = 14.sp
                 )
+
+                if (winners == "Les Imposteurs") {
+                    Text(
+                        text = "Total Imposteurs: $impostorCount",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
                 Text(
                     text = "Mot secret des titulaires: ${titulaireWord ?: "Inconnu"}",
