@@ -19,7 +19,6 @@ import com.example.redcard.ui.GameScreen
 import com.example.redcard.ui.GeneralSettingScreen
 import com.example.redcard.ui.HomeScreen
 import com.example.redcard.ui.PlayerSetupScreen
-import com.example.redcard.ui.PlayerWordDiscoverScreen
 import com.example.redcard.ui.StartingPage
 import com.example.redcard.ui.TutorialSwipeableScreen
 import com.example.redcard.ui.VictoryScreen
@@ -56,9 +55,6 @@ fun AppNavigation() {
             PlayerSetupScreen(navController, dataStoreManager)
         }
         composable("TutorialSwipeableScreen") { TutorialSwipeableScreen(navController) }
-        composable("PlayerWordDiscoverScreen") {
-            PlayerWordDiscoverScreen(navController, dataStoreManager)
-        }
         composable("gameScreen") { GameScreen(navController) }
         composable("voteScreen") { VoteScreen(navController) }
         composable("victoryScreen") { VictoryScreen(navController) }
