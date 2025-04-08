@@ -7,11 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.* // Import all Material 3 components
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -21,12 +24,18 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController // Import for rememberNavController
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
+import com.example.redcard.data.DataStoreManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameIntroductionScreen(
     navController: NavController,
     themeViewModel: ThemeViewModel,
 ) {
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val coroutineScope = rememberCoroutineScope()
+
     // Obtenir le thème actuel via ThemeViewModel
     val currentTheme by themeViewModel.theme.collectAsState()
 
@@ -70,7 +79,10 @@ fun GameIntroductionScreen(
 
             Button(
                 onClick = {
-                    navController.navigate("ChoosePlayerBallScreen") // Replace with your destination
+                    coroutineScope.launch {
+                        dataStoreManager.resetGame()
+                    }
+                    navController.navigate("ChoosePlayerBallScreen")
                 },
                 modifier = Modifier
                     .fillMaxWidth()

@@ -1,45 +1,110 @@
 package com.example.redcard.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import com.example.redcard.data.DataStoreManager
+import com.example.redcard.data.Player
+import kotlinx.coroutines.launch
 
 @Composable
 fun VictoryScreen(
-    navController: NavController
+    navController: NavController,
+    dataStoreManager: DataStoreManager
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Récupérer les joueurs enregistrés
+    val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
+
+    // Filtrer les joueurs par rôle pour afficher les gagnants (titulaires restants)
+    val titulairePlayers = remember(registeredPlayers) {
+        registeredPlayers.filter { it.role == "Titulaire" }
+    }
+
+    // Déterminer les vainqueurs en fonction des joueurs restants
+    val winners = if (titulairePlayers.isNotEmpty()) {
+        "Les Titulaires"
+    } else if (registeredPlayers.any { it.role == "Remplaçant" }) {
+        "Les Remplaçants"
+    } else if (registeredPlayers.any { it.role == "Footix" }) {
+        "Les Footix"
+    } else {
+        "Personne"
+    }
+
+    // Récupérer le mot secret des titulaires
+    val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
+
+    // État pour afficher les détails du jeu
+    var showDetails by remember { mutableStateOf(false) }
+
+    // Fonction pour réinitialiser le jeu
+    fun resetGame() {
+        scope.launch {
+            dataStoreManager.resetGame()
+            navController.navigate("startingPage") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Row en haut avec le bouton Settings
+        // En-tête avec le titre
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.End,
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(
+                onClick = {
+                    navController.navigate("startingPage") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Home,
+                    contentDescription = "Accueil",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Text(
+                text = "Fin de la Partie",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+
             IconButton(
                 onClick = {
                     navController.navigate("generalSettings")
@@ -53,46 +118,224 @@ fun VictoryScreen(
             }
         }
 
-        // Texte central "Les titulaires ont gagné !"
-        Box(
+        // Carte de victoire
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .weight(1f),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 4.dp
+            )
         ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.EmojiEvents,
+                    contentDescription = "Trophée",
+                    tint = Color(0xFFFFD700), // Couleur or
+                    modifier = Modifier.size(80.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "$winners ont gagné !",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Afficher le mot secret si disponible et si les titulaires ont gagné
+                if (winners == "Les Titulaires") {
+                    titulaireWord?.let { word ->
+                        Text(
+                            text = "Mot secret: $word",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Afficher les joueurs restants
+        if (registeredPlayers.isNotEmpty()) {
             Text(
-                text = "Les titulaires ont gagné !",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+                text = "Joueurs restants:",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                items(registeredPlayers) { player ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (player.photoUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(model = player.photoUri),
+                                contentDescription = "Photo de ${player.name}",
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        color = when (player.role) {
+                                            "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
+                                            "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
+                                            "Footix" -> Color.Yellow.copy(alpha = 0.7f)
+                                            else -> Color.Gray
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Person,
+                                    contentDescription = "Joueur",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = player.name,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+                        // Afficher le rôle à la fin du jeu
+                        Text(
+                            text = player.role,
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            Text(
+                text = "Tous les joueurs ont été éliminés!",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Red,
+                modifier = Modifier.padding(vertical = 16.dp)
             )
         }
 
-        // Column pour les boutons
+        // Bouton pour afficher/masquer les détails
+        OutlinedButton(
+            onClick = { showDetails = !showDetails },
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Text(text = if (showDetails) "Masquer les détails" else "Afficher les détails")
+        }
+
+        // Détails du jeu
+        AnimatedVisibility(visible = showDetails) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Récapitulatif de la partie",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Afficher les statistiques de la partie
+                Text(
+                    text = "Nombre total de joueurs restants: ${registeredPlayers.size}",
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = "Titulaires: ${titulairePlayers.size}",
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = "Remplaçants: ${registeredPlayers.count { it.role == "Remplaçant" }}",
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = "Footix: ${registeredPlayers.count { it.role == "Footix" }}",
+                    fontSize = 14.sp
+                )
+
+                Text(
+                    text = "Mot secret des titulaires: ${titulaireWord ?: "Inconnu"}",
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        // Boutons d'action
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Bouton Recommencer
+            // Bouton Rejouer
             Button(
                 onClick = {
-                    navController.navigate("ChoosePlayerBallScreen")
+                    scope.launch {
+                        // Reset uniquement les joueurs mais garde les configurations
+                        dataStoreManager.resetGame()
+                        navController.navigate("ChoosePlayerBallScreen")
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Recommencer")
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = "Rejouer",
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(text = "Rejouer")
             }
 
             // Bouton Retour à l'accueil
-            Button(
+            OutlinedButton(
                 onClick = {
-                    navController.navigate("startingPage")
+                    resetGame()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
+                Icon(
+                    imageVector = Icons.Filled.Home,
+                    contentDescription = "Accueil",
+                    modifier = Modifier.padding(end = 8.dp)
+                )
                 Text(text = "Retour à l'accueil")
             }
         }
     }
 }
-

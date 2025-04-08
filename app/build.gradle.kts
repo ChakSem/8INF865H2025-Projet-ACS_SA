@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id ("org.jetbrains.kotlin.plugin.compose")
-    // Add the Google services Gradle plugin
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
-
+    id("org.jetbrains.kotlin.plugin.serialization") 
 }
 
 android {
@@ -70,7 +70,6 @@ android {
 }
 
 dependencies {
-
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
     implementation("androidx.activity:activity-compose:1.8.0")
     implementation("androidx.compose.material3:material3")
@@ -83,6 +82,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.4")
     implementation("androidx.annotation:annotation:1.3.0")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
@@ -99,12 +99,9 @@ dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
 
-
-    // TODO: Add the dependencies for Firebase products you want to use
-    // When using the BoM, don't specify versions in Firebase dependencies
+    // Firebase dependencies
     implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-firestore") // Pour utiliser Firestore
-    implementation("com.google.firebase:firebase-auth")      // Pour l'authentification (optionnel)
-    implementation("com.google.firebase:firebase-database")  // Pour Realtime Database (optionnel)
-
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
 }
