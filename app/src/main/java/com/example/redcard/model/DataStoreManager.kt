@@ -1,10 +1,13 @@
 package com.example.redcard.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.common.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
 import kotlinx.serialization.Serializable
@@ -17,8 +20,6 @@ import kotlinx.serialization.SerialName
 val Context.dataStore by preferencesDataStore(name = "configurations")
 
 // Classe représentant un joueur
-
-
 @Serializable
 data class Player(
     @SerialName("id") val id: String = UUID.randomUUID().toString(),
@@ -27,14 +28,14 @@ data class Player(
     @SerialName("role") val role: String,
     @SerialName("word") val word: String?
 )
+
 class DataStoreManager(private val context: Context) {
-       // Add this configuration
-       private val json = Json { 
-        ignoreUnknownKeys = true 
+    // Add this configuration
+    private val json = Json {
+        ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
     }
-    
 
     companion object {
         // Clés existantes
@@ -50,12 +51,17 @@ class DataStoreManager(private val context: Context) {
         val PLAYER_NAME_KEY = stringPreferencesKey("player_name")
         val SELECTED_BALLS_KEY = stringSetPreferencesKey("selected_balls")
 
-        // Nouvelles clés pour la gestion des comptes
+        // Clés pour la gestion des comptes et des mots
         val REGISTERED_PLAYERS_KEY = stringPreferencesKey("registered_players")
         val CURRENT_BALL_KEY = stringPreferencesKey("current_ball")
         val CURRENT_ROLE_KEY = stringPreferencesKey("current_role")
         val ALL_PLAYERS_REGISTERED_KEY = booleanPreferencesKey("all_players_registered")
+
+        // Nouvelles clés pour la gestion des mots par rôle
+        val TITULAIRE_WORD_KEY = stringPreferencesKey("titulaire_word")
+        val REMPLACANT_WORD_KEY = stringPreferencesKey("remplacant_word")
     }
+
 
     // Mots secrets par défaut
     private val defaultSecretWords = setOf(
@@ -81,6 +87,12 @@ class DataStoreManager(private val context: Context) {
     val allPlayersRegisteredFlow: Flow<Boolean> = context.dataStore.data
         .map { it[ALL_PLAYERS_REGISTERED_KEY] ?: false }
 
+    // Flux pour les mots par rôle
+    val titulaireWordFlow: Flow<String?> = context.dataStore.data
+        .map { it[TITULAIRE_WORD_KEY] }
+
+    val remplacantWordFlow: Flow<String?> = context.dataStore.data
+        .map { it[REMPLACANT_WORD_KEY] }
 
     val registeredPlayersFlow: Flow<List<Player>> = context.dataStore.data
         .map { preferences ->
@@ -91,8 +103,10 @@ class DataStoreManager(private val context: Context) {
                 emptyList()
             }
         }
-
-
+    // Nouvelle méthode pour compter les joueurs par rôle
+    suspend fun getPlayerCountByRole(role: String): Int {
+        return registeredPlayersFlow.first().count { it.role == role }
+    }
     suspend fun saveSecretWords(words: Set<String>) {
         context.dataStore.edit { it[SECRET_WORDS_KEY] = words }
     }
@@ -101,12 +115,30 @@ class DataStoreManager(private val context: Context) {
         context.dataStore.edit { it[SELECTED_BALL_WORD_KEY] = word }
     }
 
-    suspend fun saveCurrentBall(word: String) {
-        context.dataStore.edit { it[CURRENT_BALL_KEY] = word }
+    suspend fun saveCurrentBall(word: String?) {
+        context.dataStore.edit {
+            if (word != null) {
+                it[CURRENT_BALL_KEY] = word
+            } else {
+                it.remove(CURRENT_BALL_KEY)
+            }
+        }
     }
 
     suspend fun saveCurrentRole(role: String) {
         context.dataStore.edit { it[CURRENT_ROLE_KEY] = role }
+    }
+
+    // Méthode pour initialiser les mots par rôle
+    suspend fun initializeGameWords() {
+        val words = secretWordsFlow.map { it.toList().shuffled() }.collect { shuffledWords ->
+            if (shuffledWords.size >= 2) {
+                context.dataStore.edit {
+                    it[TITULAIRE_WORD_KEY] = shuffledWords[0]
+                    it[REMPLACANT_WORD_KEY] = shuffledWords[1]
+                }
+            }
+        }
     }
 
     // Flux pour récupérer les valeurs, avec des valeurs par défaut
@@ -118,15 +150,53 @@ class DataStoreManager(private val context: Context) {
     val rolesFlow: Flow<List<String>> = combine(
         titulairesFlow,
         footixFlow,
-        remplacantsFlow
-    ) { titulaires, footix, remplacants ->
-        List(titulaires) { "Titulaire" } +
-                List(footix) { "Footix" } +
-                List(remplacants) { "Remplaçant" }
-    }.map { it.shuffled() } // Mélanger les rôles pour éviter un ordre prévisible
+        remplacantsFlow,
+        playersFlow
+    ) { titulaires, footix, remplacants, totalPlayers ->
+        // S'assurer que nous avons exactement le bon nombre de rôles
+        val rolesList = mutableListOf<String>()
 
+        // Ajout des titulaires
+        repeat(titulaires) { rolesList.add("Titulaire") }
+
+        // Ajout des footix
+        repeat(footix) { rolesList.add("Footix") }
+
+        // Ajout des remplaçants
+        repeat(remplacants) { rolesList.add("Remplaçant") }
+
+        // Vérification finale
+        if (rolesList.size != totalPlayers) {
+            // Correction si nécessaire (ajout ou suppression de rôles)
+            while (rolesList.size < totalPlayers) {
+                rolesList.add("Titulaire") // Par défaut, ajouter des titulaires
+            }
+            while (rolesList.size > totalPlayers) {
+                rolesList.removeLast() // Enlever le dernier rôle
+            }
+        }
+
+        rolesList.shuffled() // Mélanger les rôles pour éviter un ordre prévisible
+    }
     val soundEnabledFlow: Flow<Boolean> = context.dataStore.data.map { it[SOUND_ENABLED_KEY] ?: true }
     val currentLanguageFlow: Flow<String> = context.dataStore.data.map { it[CURRENT_LANGUAGE_KEY] ?: "Français" }
+
+    // Nouvelle méthode pour obtenir les ballons disponibles
+    val availableBallsFlow: Flow<Map<String, Int>> = combine(
+        rolesFlow,
+        registeredPlayersFlow
+    ) { roles, registeredPlayers ->
+        // Compte le nombre de chaque rôle configuré dans la partie
+        val roleCounts = roles.groupingBy { it }.eachCount()
+
+        // Compte le nombre de chaque rôle déjà attribué
+        val usedRoleCounts = registeredPlayers.groupingBy { it.role }.eachCount()
+
+        // Calcule le nombre de ballons disponibles pour chaque rôle
+        roleCounts.mapValues { (role, count) ->
+            count - (usedRoleCounts[role] ?: 0)
+        }.filter { it.value > 0 } // Ne garde que les rôles avec des ballons disponibles
+    }
 
     // Méthodes pour enregistrer les valeurs
     suspend fun savePlayers(value: Int) {
@@ -158,13 +228,19 @@ class DataStoreManager(private val context: Context) {
         .map { it[SELECTED_BALLS_KEY] ?: emptySet() }
 
     // Sauvegarder un ballon sélectionné
-    suspend fun saveSelectedBall(word: String, role: String) {
+    suspend fun saveSelectedBall(word: String?, role: String) {
         context.dataStore.edit { preferences ->
-            val updatedBalls = preferences[SELECTED_BALLS_KEY]?.toMutableSet() ?: mutableSetOf()
-            updatedBalls.add(word)
-            preferences[SELECTED_BALLS_KEY] = updatedBalls
-            preferences[CURRENT_BALL_KEY] = word
+            if (word != null) {
+                val updatedBalls = preferences[SELECTED_BALLS_KEY]?.toMutableSet() ?: mutableSetOf()
+                updatedBalls.add(word)
+                preferences[SELECTED_BALLS_KEY] = updatedBalls
+            }
             preferences[CURRENT_ROLE_KEY] = role
+            if (word != null) {
+                preferences[CURRENT_BALL_KEY] = word
+            } else {
+                preferences.remove(CURRENT_BALL_KEY)
+            }
         }
     }
 
@@ -195,6 +271,7 @@ class DataStoreManager(private val context: Context) {
         return File(photoDir, "player_photo_${System.currentTimeMillis()}.jpg")
     }
 
+    // Méthode modifiée pour attribuer correctement les mots selon le rôle
     suspend fun registerPlayer(name: String, photoUri: String?) {
         try {
             context.dataStore.edit { preferences ->
@@ -210,15 +287,22 @@ class DataStoreManager(private val context: Context) {
                 }
 
                 val playerId = UUID.randomUUID().toString()
-                val currentBall = preferences[CURRENT_BALL_KEY]
                 val currentRole = preferences[CURRENT_ROLE_KEY] ?: "Inconnu"
+
+                // Déterminer le mot en fonction du rôle
+                val playerWord = when (currentRole) {
+                    "Titulaire" -> preferences[TITULAIRE_WORD_KEY]
+                    "Remplaçant" -> preferences[REMPLACANT_WORD_KEY]
+                    "Footix" -> null // Le Footix n'a pas de mot
+                    else -> preferences[CURRENT_BALL_KEY]
+                }
 
                 val newPlayer = Player(
                     id = playerId,
                     name = name,
                     photoUri = photoUri,
                     role = currentRole,
-                    word = currentBall
+                    word = playerWord
                 )
 
                 // Mettre à jour ou ajouter le joueur
@@ -236,31 +320,49 @@ class DataStoreManager(private val context: Context) {
                 val totalPlayers = preferences[PLAYERS_KEY] ?: 3
                 preferences[ALL_PLAYERS_REGISTERED_KEY] = updatedPlayers.size >= totalPlayers
 
-                // Mettre à jour la liste des ballons sélectionnés de manière plus robuste
+                // Ajouter le ballon actuel à la liste des ballons sélectionnés
+                val currentBall = preferences[CURRENT_BALL_KEY]
                 if (currentBall != null) {
                     val updatedBalls = preferences[SELECTED_BALLS_KEY]?.toMutableSet() ?: mutableSetOf()
                     updatedBalls.add(currentBall)
                     preferences[SELECTED_BALLS_KEY] = updatedBalls
                 }
-
-                // Garder ces valeurs pour le débogage
-                // NE PAS les supprimer jusqu'à ce que le joueur soit bien enregistré
-                // On les supprimera après avoir vérifié que tout fonctionne
+                // Forcer un rafraîchissement en modifiant puis remettant la valeur
+                val players = preferences[PLAYERS_KEY] ?: 3
+                preferences[PLAYERS_KEY] = players
             }
         } catch (e: Exception) {
             e.printStackTrace()
             throw e
         }
-    
     }
-    // Ajout d'une méthode pour vérifier si un nom de joueur est déjà utilisé
-    val isPlayerNameTakenFlow: Flow<Boolean> = combine(
-        registeredPlayersFlow,
-        playerNameFlow
-    ) { players, currentName ->
-        currentName?.let { name ->
-            players.any { it.name.equals(name, ignoreCase = true) }
-        } ?: false
+    /**
+     * Récupère la liste des joueurs enregistrés à partir des préférences
+     * @param preferences Les préférences du DataStore
+     * @return La liste des joueurs enregistrés
+     */
+    private fun getRegisteredPlayersFromPreferences(preferences: Preferences): List<Player> {
+        val playersJson = preferences[REGISTERED_PLAYERS_KEY] ?: return emptyList()
+
+        return try {
+            Json.decodeFromString<List<Player>>(playersJson)
+        } catch (e: Exception) {
+            Log.e("DataStoreManager", "Erreur lors de la désérialisation des joueurs: ${e.message}")
+            emptyList()
+        }
+    }
+    // // Ajout d'une méthode pour vérifier si un nom de joueur est déjà utilisé
+    // val isPlayerNameTakenFlow: Flow<Boolean> = combine(
+    //     registeredPlayersFlow,
+    //     playerNameFlow
+    // ) { players, currentName ->
+    //     currentName?.let { name ->
+    //         players.any { it.name.equals(name, ignoreCase = true) }
+    //     } ?: false
+    //}
+    fun isPlayerNameTakenFlow(name: String) = context.dataStore.data.map { preferences ->
+        val registeredPlayers = getRegisteredPlayersFromPreferences(preferences)
+        registeredPlayers.any { it.name == name }
     }
 
     // Modification de resetGame pour réinitialiser complètement le jeu
@@ -269,13 +371,16 @@ class DataStoreManager(private val context: Context) {
             preferences.remove(REGISTERED_PLAYERS_KEY)
             preferences.remove(SELECTED_BALLS_KEY)
             preferences.remove(ALL_PLAYERS_REGISTERED_KEY)
-//            preferences.remove(PLAYER_NAME_KEY)
-//            preferences.remove(PLAYER_PHOTO_URI_KEY)
-//            preferences.remove(CURRENT_BALL_KEY)
-//            preferences.remove(CURRENT_ROLE_KEY)
-            preferences.remove(SELECTED_BALL_WORD_KEY) // Ajouté pour réinitialiser complètement
+            preferences.remove(PLAYER_NAME_KEY)
+            preferences.remove(PLAYER_PHOTO_URI_KEY)
+            preferences.remove(CURRENT_BALL_KEY)
+            preferences.remove(CURRENT_ROLE_KEY)
+            preferences.remove(SELECTED_BALL_WORD_KEY)
+            preferences.remove(TITULAIRE_WORD_KEY)
+            preferences.remove(REMPLACANT_WORD_KEY)
         }
     }
+
     suspend fun forceRefreshRegisteredPlayers() {
         context.dataStore.edit { preferences ->
             val currentPlayers = try {
@@ -284,6 +389,18 @@ class DataStoreManager(private val context: Context) {
                 emptyList()
             }
             preferences[REGISTERED_PLAYERS_KEY] = json.encodeToString(currentPlayers)
+        }
+    }
+
+    suspend fun resetPlayerPhoto() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PLAYER_PHOTO_URI_KEY)
+        }
+    }
+
+    suspend fun resetPlayerName() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PLAYER_NAME_KEY)
         }
     }
 }
