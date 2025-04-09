@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.redcard.model.TurnManager
 import com.google.common.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -366,7 +367,7 @@ class DataStoreManager(private val context: Context) {
     }
 
     // Modification de resetGame pour réinitialiser complètement le jeu
-    suspend fun resetGame() {
+    suspend fun resetGame(turnManager: TurnManager? = null) {
         context.dataStore.edit { preferences ->
             preferences.remove(REGISTERED_PLAYERS_KEY)
             preferences.remove(SELECTED_BALLS_KEY)
@@ -379,6 +380,9 @@ class DataStoreManager(private val context: Context) {
             preferences.remove(TITULAIRE_WORD_KEY)
             preferences.remove(REMPLACANT_WORD_KEY)
         }
+        
+        // Réinitialiser aussi le TurnManager si fourni
+        turnManager?.resetTurnManager()
     }
 
     suspend fun forceRefreshRegisteredPlayers() {
