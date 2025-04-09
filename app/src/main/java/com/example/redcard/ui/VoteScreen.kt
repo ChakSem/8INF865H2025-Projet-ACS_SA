@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
+import com.example.redcard.model.TurnManager
 import com.example.redcard.data.dataStore
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.RedCardTheme
@@ -38,7 +39,8 @@ import kotlinx.coroutines.launch
 fun VoteScreen(
     navController: NavController,
     dataStoreManager: DataStoreManager,
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    turnManager: TurnManager // Ajout du TurnManager
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -47,7 +49,10 @@ fun VoteScreen(
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
 
-    // Filtrer les joueurs non titulaires (ceux qui peuvent être éliminés)
+    // Récupérer le tour actuel
+    val currentTurn by turnManager.currentTurnFlow.collectAsState(initial = 1)
+
+    // Filtrer les joueurs pour le vote
     val eliminablePlayers = registeredPlayers
 
     // Compter les joueurs par rôle
@@ -73,7 +78,7 @@ fun VoteScreen(
         titulaireCount > 0 && impostorCount > 0
     }
 
-    // Fonction pour éliminer un joueur
+    // Fonction pour éliminer un joueur et passer au tour suivant
     fun eliminatePlayer() {
         selectedPlayer?.let { player ->
             scope.launch {
@@ -100,7 +105,10 @@ fun VoteScreen(
                     // Passage à l'écran de victoire
                     navController.navigate("victoryScreen")
                 } else {
-                    // Sinon, retour à l'écran de jeu
+                    // Passer au tour suivant
+                    turnManager.moveToNextTurn()
+
+                    // Retour à l'écran de jeu
                     navController.navigate("gameScreen")
                 }
             }
@@ -139,25 +147,23 @@ fun VoteScreen(
             ) {
                 IconButton(
                     onClick = {
-                        navController.navigate("startingPage") {
-                            popUpTo("startingPage") { inclusive = true }
-                        }
+                        navController.navigate("startingPage")
                     }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Home,
                         contentDescription = "Accueil",
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp),
+                        tint = iconColor
                     )
                 }
 
-            // Afficher les compteurs de rôles
-            Text(
-                text = "Titulaires: $titulaireCount | " +
-                        "Remplaçants: $remplacantCount | " +
-                        "Footix: $footixCount",
-                fontSize = 14.sp
-            )
+                Text(
+                    text = "Éliminer un joueur",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
 
                 IconButton(
                     onClick = {
@@ -167,173 +173,209 @@ fun VoteScreen(
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Réglages",
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp),
+                        tint = iconColor
                     )
                 }
             }
 
-            // Cadran avec le texte
+            // Afficher les compteurs de rôles
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
-                Text(
-                    text = "Qui voulez-vous éliminer ?",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
-                )
-            }
-
-        // Liste des joueurs pouvant être éliminés
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(eliminablePlayers) { player ->
-                PlayerVoteItem(
-                    player = player,
-                    isSelected = selectedPlayer?.id == player.id,
-                    onPlayerSelected = { selectedPlayer = player }
-                )
-            }
-        }
-
-        // Afficher un message si aucun joueur éliminable n'est disponible
-        if (eliminablePlayers.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Pas de joueurs à éliminer !",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-
-        // Boutons d'action
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Bouton Annuler
-            OutlinedButton(
-                onClick = {
-                    navController.navigateUp()
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = "Annuler")
-            }
-
-                // Bouton Confirmer
-                Button(
-                    onClick = {
-                        eliminatePlayer()
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = selectedPlayer != null
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(text = "Confirmer")
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Titulaires", fontWeight = FontWeight.Medium)
+                        Text(text = "$titulaireCount", fontSize = 18.sp)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Remplaçants", fontWeight = FontWeight.Medium)
+                        Text(text = "$remplacantCount", fontSize = 18.sp)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Footix", fontWeight = FontWeight.Medium)
+                        Text(text = "$footixCount", fontSize = 18.sp)
+                    }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun PlayerVoteItem(
-    player: Player,
-    isSelected: Boolean,
-    onPlayerSelected: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onPlayerSelected() }
-            .border(
-                width = if (isSelected) 2.dp else 0.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else
-                Color.LightGray.copy(alpha = 0.2f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Photo du joueur ou avatar
-            if (player.photoUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = player.photoUri),
-                    contentDescription = "Photo de ${player.name}",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+            // Afficher le tour actuel
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
-            } else {
-                Box(
+            ) {
+                Column(
                     modifier = Modifier
-                        .size(60.dp)
-                        .background(
-                            color = when (player.role) {
-                                "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
-                                "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
-                                "Footix" -> Color.Yellow.copy(alpha = 0.7f)
-                                else -> Color.Gray
-                            },
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Joueur",
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
+                    Text(
+                        text = "Tour $currentTurn",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Choisissez un joueur à éliminer",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
 
-            // Informations du joueur
-            Column(
+            // Liste des joueurs pour le vote
+            LazyColumn(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp)
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                items(eliminablePlayers) { player ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPlayer = player },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedPlayer?.id == player.id)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Photo ou avatar du joueur
+                            if (player.photoUri != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(model = player.photoUri),
+                                    contentDescription = "Photo de ${player.name}",
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                        .border(
+                                            width = if (selectedPlayer?.id == player.id) 2.dp else 1.dp,
+                                            color = if (selectedPlayer?.id == player.id)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outline,
+                                            shape = CircleShape
+                                        ),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .background(
+                                            color = when (player.role) {
+                                                "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
+                                                "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
+                                                "Footix" -> Color.Yellow.copy(alpha = 0.7f)
+                                                else -> Color.Gray
+                                            },
+                                            shape = CircleShape
+                                        )
+                                        .border(
+                                            width = if (selectedPlayer?.id == player.id) 2.dp else 1.dp,
+                                            color = if (selectedPlayer?.id == player.id)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outline,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Person,
+                                        contentDescription = "Joueur",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(30.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Text(
+                                text = player.name,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // Indicateur de sélection
+                            if (selectedPlayer?.id == player.id) {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = "Sélectionné",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bouton de validation du vote
+            Button(
+                onClick = { eliminatePlayer() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                enabled = selectedPlayer != null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Éliminer",
+                    modifier = Modifier.padding(end = 8.dp)
+                )
                 Text(
-                    text = player.name,
-                    fontSize = 18.sp,
+                    text = "Éliminer le joueur",
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            // Icône de sélection
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = "Sélectionné",
-                    tint = MaterialTheme.colorScheme.primary
+            // Bouton pour passer l'élimination (optionnel)
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        // Passer au tour suivant sans éliminer
+                        turnManager.moveToNextTurn()
+                        navController.navigate("gameScreen")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Passer cette élimination",
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

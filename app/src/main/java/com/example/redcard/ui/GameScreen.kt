@@ -1,35 +1,34 @@
 package com.example.redcard.ui
 
-import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.redcard.R
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.ui.platform.LocalContext
-import com.example.redcard.model.MusicPlayerManager
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
-import com.example.redcard.data.Player
+import com.example.redcard.model.MusicPlayerManager
+import com.example.redcard.model.TurnManager
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.RedCardTheme
 import com.example.redcard.ui.theme.ThemeViewModel
@@ -39,14 +38,47 @@ import kotlinx.coroutines.launch
 fun GameScreen(
     navController: NavController,
     dataStoreManager: DataStoreManager,
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    turnManager: TurnManager
 ) {
-    // Musique de fond
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        MusicPlayerManager.playMusicGame(context)
-    }
+    // Récupérer les joueurs enregistrés
+    val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
+
+    // Récupérer les informations de tour actuel
+    val currentTurn by turnManager.currentTurnFlow.collectAsState(initial = 1)
+    val playersOrder by turnManager.playersOrderFlow.collectAsState(initial = emptyList())
+    val currentPlayerIndex by turnManager.currentPlayerIndexFlow.collectAsState(initial = 0)
+
+    // Récupérer le mot secret des titulaires
+    val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
+
+    // État pour gérer l'affichage du mot
+    var showWord by remember { mutableStateOf(false) }
+
+    // État pour suivre si la vérification initiale a été faite
+    var initialCheckDone by remember { mutableStateOf(false) }
+
+    // Compter les joueurs par rôle
+    val titulaireCount = registeredPlayers.count { it.role == "Titulaire" }
+    val footixCount = registeredPlayers.count { it.role == "Footix" }
+    val remplacantCount = registeredPlayers.count { it.role == "Remplaçant" }
+
+    // Compter les imposteurs (Remplaçants + Footix)
+    val impostorCount = footixCount + remplacantCount
+
+    // Vérifier si le jeu peut continuer
+    val gameCanContinue = titulaireCount > 0 && impostorCount > 0
+
+    // Obtenir le joueur actuel s'il existe
+    val currentPlayer = if (playersOrder.isNotEmpty() && currentPlayerIndex < playersOrder.size) {
+        playersOrder[currentPlayerIndex]
+    } else null
+
+    // Vérifier si tous les joueurs ont joué dans ce tour
+    val isLastPlayerInTurn = currentPlayerIndex >= playersOrder.size - 1
 
     // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
@@ -58,45 +90,45 @@ fun GameScreen(
         AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
     }
 
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val textColor = MaterialTheme.colorScheme.onBackground
-    val iconColor = if (darkTheme) Color.White else Color.Black
+    // Initialiser l'ordre des joueurs au premier chargement ou quand les joueurs changent
+    LaunchedEffect(registeredPlayers) {
+        // Démarrer la musique de jeu
+        MusicPlayerManager.playMusicGame(context)
 
-    var isEyeOpen by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
-
-    // Variables pour la gestion de la pop-up des mots secrets
-    var selectedPlayer by remember { mutableStateOf<Player?>(null) }
-    var showWordDialog by remember { mutableStateOf(false) }
-
-    // Récupérer les joueurs enregistrés
-    val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
-
-    // Filtrer les joueurs par rôle
-    val footixPlayers = remember(registeredPlayers) {
-        registeredPlayers.filter { it.role == "Footix" }
+        // Synchroniser les joueurs du TurnManager avec ceux du DataStore
+        if (registeredPlayers.isNotEmpty()) {
+            turnManager.syncPlayersWithDataStore(dataStoreManager.registeredPlayersFlow)
+        }
     }
 
-    val remplacantPlayers = remember(registeredPlayers) {
-        registeredPlayers.filter { it.role == "Remplaçant" }
+    // Vérifier les conditions de victoire après que toutes les données sont chargées
+    LaunchedEffect(registeredPlayers) {
+        // Seulement si nous avons des joueurs et que la vérification initiale n'a pas été faite
+        if (registeredPlayers.isNotEmpty() && initialCheckDone) {
+            // Ne vérifier les conditions de victoire que si le jeu ne peut pas continuer
+            if (!gameCanContinue) {
+                // Si le jeu ne peut plus continuer, aller à l'écran de victoire
+                navController.navigate("victoryScreen")
+            }
+        }
     }
 
-    // Vérifier s'il reste des joueurs
-    val gameCanContinue = remember(registeredPlayers) {
-        registeredPlayers.isNotEmpty()
+    // Effectuer la vérification initiale après un petit délai pour s'assurer que tout est chargé
+    LaunchedEffect(Unit) {
+        // Attendre que les données soient chargées avant de faire la vérification
+        kotlinx.coroutines.delay(300)
+        initialCheckDone = true
     }
 
     RedCardTheme(darkTheme = darkTheme) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp) // Espacement accru entre les éléments
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Icône maison et titre
+            // En-tête avec informations de tour et boutons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,202 +136,237 @@ fun GameScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Accueil",
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable {
-                            navController.navigate("startingPage") {
-                                popUpTo("home") { inclusive = true }
-                            }
+                IconButton(
+                    onClick = {
+                        navController.navigate("startingPage") {
+                            popUpTo("startingPage") { inclusive = true }
                         }
-                )
-
-                // Afficher le décompte des joueurs par rôle
-                Text(
-                    text = "Titulaires: ${registeredPlayers.count { it.role == "Titulaire" }} | " +
-                            "Remplaçants: ${remplacantPlayers.size} | " +
-                            "Footix: ${footixPlayers.size}",
-                    fontSize = 14.sp
-                )
-            }
-
-            // Titre avec instructions
-            Text(
-                text = "Décrivez votre mot",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            // Afficher la grille des joueurs
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                // Afficher les 3 premiers joueurs ou moins si pas assez
-                for (i in 0 until minOf(3, registeredPlayers.size)) {
-                    val player = registeredPlayers[i]
-                    PlayerAvatar(
-                        player = player,
-                        onPlayerClick = {
-                            selectedPlayer = player
-                            showWordDialog = true
-                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Accueil",
+                        modifier = Modifier.size(40.dp)
                     )
                 }
-            }
 
-            // Afficher une deuxième rangée si plus de 3 joueurs
-            if (registeredPlayers.size > 3) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    for (i in 3 until minOf(6, registeredPlayers.size)) {
-                        val player = registeredPlayers[i]
-                        PlayerAvatar(
-                            player = player,
-                            onPlayerClick = {
-                                selectedPlayer = player
-                                showWordDialog = true
-                            }
-                        )
-                    }
-                }
-            }
+                Text(
+                    text = "Tour ${currentTurn}",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            // Espacer les éléments supplémentaires
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Texte informatif sur l'état du jeu
-            Text(
-                text = if (gameCanContinue)
-                    "La partie continue! Votez pour éliminer un joueur."
-                else
-                    "Tous les joueurs ont été éliminés!",
-                fontSize = 16.sp,
-                color = if (gameCanContinue) Color.Green else Color.Red
-            )
-
-            // Bouton "Passer au vote"
-            Button(
-                onClick = {
-                    if (gameCanContinue) {
-                        navController.navigate("voteScreen")
-                    } else {
-                        // Si plus de joueurs, passer à l'écran de victoire
-                        navController.navigate("victoryScreen")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = if (gameCanContinue) "Passer au vote" else "Terminer la partie")
-            }
-
-            // Boutons en bas à droite
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
                 IconButton(
                     onClick = {
                         navController.navigate("generalSettings")
-                    },
-                    modifier = Modifier.size(40.dp)
-
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Réglages",
-                        tint = iconColor
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
-        }
-    }
 
-    // Dialogue pour afficher le mot secret
-    if (showWordDialog && selectedPlayer != null) {
-        AlertDialog(
-            onDismissRequest = { showWordDialog = false },
-            title = { Text(text = selectedPlayer!!.name) },
-            text = {
-                Column {
-                    Spacer(modifier = Modifier.height(8.dp))
+            // Afficher les compteurs de rôles
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Titulaires", fontWeight = FontWeight.Medium)
+                        Text(text = "$titulaireCount", fontSize = 18.sp)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Remplaçants", fontWeight = FontWeight.Medium)
+                        Text(text = "$remplacantCount", fontSize = 18.sp)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Footix", fontWeight = FontWeight.Medium)
+                        Text(text = "$footixCount", fontSize = 18.sp)
+                    }
+                }
+            }
+
+            // Texte explicatif
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = if (selectedPlayer!!.role == "Footix")
-                            "Mot secret : Rien"
-                        else
-                            "Mot secret : ${selectedPlayer!!.word ?: "Non défini"}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "Tour $currentTurn",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Les joueurs doivent proposer un mot en suivant l'ordre ci-dessous. Une fois tous les joueurs passés, vous pourrez voter pour éliminer un joueur.",
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showWordDialog = false }) {
-                    Text("Fermer")
+            }
+
+            // Ordre de passage des joueurs
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Ordre de passage",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(playersOrder) { index, player ->
+                            val isCurrentPlayer = index == currentPlayerIndex
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(
+                                        width = if (isCurrentPlayer) 2.dp else 1.dp,
+                                        color = if (isCurrentPlayer)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outline,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .background(
+                                        color = if (isCurrentPlayer)
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                        else
+                                            Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${index + 1}.",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+
+                                if (player.photoUri != null) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(model = player.photoUri),
+                                        contentDescription = "Photo de ${player.name}",
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(
+                                                color = when (player.role) {
+                                                    "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
+                                                    "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
+                                                    "Footix" -> Color.Yellow.copy(alpha = 0.7f)
+                                                    else -> Color.Gray
+                                                },
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Person,
+                                            contentDescription = "Joueur",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = player.name,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .weight(1f)
+                                )
+
+                                if (isCurrentPlayer) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ArrowForward,
+                                        contentDescription = "Joueur actuel",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        )
-    }
-}
 
-@Composable
-fun PlayerAvatar(
-    player: Player,
-    onPlayerClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.clickable { onPlayerClick() }
-    ) {
-        if (player.photoUri != null) {
-            Image(
-                painter = rememberAsyncImagePainter(model = player.photoUri),
-                contentDescription = "Photo de ${player.name}",
+            // Bouton pour aller directement au vote
+            Button(
+                onClick = {
+                    scope.launch {
+                        navController.navigate("voteScreen")
+                    }
+                },
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = when (player.role) {
-                            "Titulaire" -> Color.Blue.copy(alpha = 0.7f)
-                            "Remplaçant" -> Color.Green.copy(alpha = 0.7f)
-                            "Footix" -> Color.Yellow.copy(alpha = 0.7f)
-                            else -> Color.Gray
-                        },
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "Joueur",
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
+                    imageVector = Icons.Filled.HowToVote,
+                    contentDescription = "Aller au vote",
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = "Passer au vote",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
-
-        Text(
-            text = player.name,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 4.dp)
-        )
     }
 }
