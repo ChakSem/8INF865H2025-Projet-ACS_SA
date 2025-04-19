@@ -133,9 +133,7 @@ fun VictoryScreen(
             ) {
                 IconButton(
                     onClick = {
-                        navController.navigate("startingPage") {
-                            popUpTo(0) { inclusive = true }
-                        }
+                        resetGame() // Utiliser resetGame pour s'assurer que tout est nettoyé
                     }
                 ) {
                     Icon(
@@ -417,13 +415,18 @@ fun VictoryScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Bouton Rejouer
+                // Bouton Rejouer - MODIFIÉ pour éviter le problème de navigation
                 Button(
                     onClick = {
                         scope.launch {
-                            MusicPlayerManager.playMusicSalon(context) // 🎵 Lancer la musique d'intro
+                            // Réinitialiser complètement le jeu avant de naviguer
                             dataStoreManager.resetGame()
-                            navController.navigate("ChoosePlayerBallScreen")
+                            MusicPlayerManager.playMusicSalon(context)
+
+                            // Utiliser popUpTo(0) pour effacer complètement la pile de navigation
+                            navController.navigate("ChoosePlayerBallScreen") {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
