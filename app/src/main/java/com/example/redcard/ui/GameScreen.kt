@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
+import com.example.redcard.data.Player
 import com.example.redcard.model.MusicPlayerManager
 import com.example.redcard.model.TurnManager
 import com.example.redcard.ui.theme.AppTheme
@@ -57,6 +59,15 @@ fun GameScreen(
 
     // État pour gérer l'affichage du mot
     var showWord by remember { mutableStateOf(false) }
+
+    // État pour le joueur sélectionné pour voir son mot secret
+    var selectedPlayer by remember { mutableStateOf<Player?>(null) }
+
+    // État pour contrôler l'affichage de la boîte de dialogue
+    var showWordDialog by remember { mutableStateOf(false) }
+
+    // État pour contrôler si le mot est visible dans la boîte de dialogue
+    var isWordVisible by remember { mutableStateOf(false) }
 
     // État pour suivre si la vérification initiale a été faite
     var initialCheckDone by remember { mutableStateOf(false) }
@@ -118,6 +129,50 @@ fun GameScreen(
         // Attendre que les données soient chargées avant de faire la vérification
         kotlinx.coroutines.delay(300)
         initialCheckDone = true
+    }
+
+    // Boîte de dialogue pour afficher le mot secret
+    if (showWordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showWordDialog = false
+                isWordVisible = false
+            },
+            title = { Text("Mot Secret") },
+            text = {
+                Column {
+                    Text("Joueur: ${selectedPlayer?.name}")
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (isWordVisible) {
+                        val wordToShow = when (selectedPlayer?.role) {
+                            "Titulaire" -> titulaireWord ?: "Pas de mot défini"
+                            "Remplaçant" -> "Ne connaît pas le mot secret"
+                            "Footix" -> "N'a pas de mot secret"
+                            else -> "Rôle inconnu"
+                        }
+                        Text("Mot secret: $wordToShow")
+                    } else {
+                        Button(
+                            onClick = { isWordVisible = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Afficher le mot secret")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWordDialog = false
+                        isWordVisible = false
+                    }
+                ) {
+                    Text("Fermer")
+                }
+            }
+        )
     }
 
     RedCardTheme(darkTheme = darkTheme) {
@@ -278,7 +333,12 @@ fun GameScreen(
                                             Color.Transparent,
                                         shape = RoundedCornerShape(8.dp)
                                     )
-                                    .padding(8.dp),
+                                    .padding(8.dp)
+                                    .clickable {
+                                        // Afficher la boîte de dialogue du mot secret
+                                        selectedPlayer = player
+                                        showWordDialog = true
+                                    },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
