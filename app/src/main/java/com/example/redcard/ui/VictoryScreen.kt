@@ -1,5 +1,6 @@
 package com.example.redcard.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -46,6 +47,14 @@ fun VictoryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    // Gestion du bouton retour arrière (Back)
+    BackHandler {
+        // Naviguer vers l'écran de configuration du jeu
+        navController.navigate("gameConfiguration") {
+            popUpTo("victoryScreen") { inclusive = true }
+        }
+    }
 
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
