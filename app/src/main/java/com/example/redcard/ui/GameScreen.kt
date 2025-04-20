@@ -387,15 +387,7 @@ fun GameScreen(
                                     modifier = Modifier
                                         .padding(start = 8.dp)
                                         .weight(1f)
-                                )
-
-                                if (isCurrentPlayer) {
-                                    Icon(
-                                        imageVector = Icons.Filled.ArrowForward,
-                                        contentDescription = "Joueur actuel",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                                )   
                             }
                         }
                     }
