@@ -179,35 +179,7 @@ fun VoteScreen(
                 }
             }
 
-            // Afficher les compteurs de rôles
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Titulaires", fontWeight = FontWeight.Medium)
-                        Text(text = "$titulaireCount", fontSize = 18.sp)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Remplaçants", fontWeight = FontWeight.Medium)
-                        Text(text = "$remplacantCount", fontSize = 18.sp)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Footix", fontWeight = FontWeight.Medium)
-                        Text(text = "$footixCount", fontSize = 18.sp)
-                    }
-                }
-            }
+            
 
             // Afficher le tour actuel
             Card(
