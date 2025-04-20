@@ -111,7 +111,6 @@ fun AppNavigation(themeViewModel: ThemeViewModel, turnManager: TurnManager) {
                 navController,
                 dataStoreManager,
                 themeViewModel,
-                turnManager
             )
         }
         composable("victoryScreen") {

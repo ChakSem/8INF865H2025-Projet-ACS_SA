@@ -40,7 +40,6 @@ fun VoteScreen(
     navController: NavController,
     dataStoreManager: DataStoreManager,
     themeViewModel: ThemeViewModel,
-    turnManager: TurnManager // Ajout du TurnManager
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -48,9 +47,6 @@ fun VoteScreen(
 
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
-
-    // Récupérer le tour actuel
-    val currentTurn by turnManager.currentTurnFlow.collectAsState(initial = 1)
 
     // Filtrer les joueurs pour le vote
     val eliminablePlayers = registeredPlayers
@@ -74,8 +70,13 @@ fun VoteScreen(
         footixCount + remplacantCount
     }
 
+    // Vérifier si le jeu peut continuer
     val gameCanContinue = remember(titulaireCount, impostorCount) {
-        titulaireCount > 0 && impostorCount > 0
+        when {
+            titulaireCount == 0 || impostorCount == 0 -> false
+            titulaireCount == 1 && impostorCount == 1 -> false // Règle spéciale: 1 titu et 1 imposteur
+            else -> true
+        }
     }
 
     // Fonction pour éliminer un joueur et passer au tour suivant
@@ -101,13 +102,11 @@ fun VoteScreen(
                 val newImpostorCount = newFootixCount + newRemplacantCount
 
                 // Cas de victoire
-                if (newTitulaireCount == 0 || newImpostorCount == 0 || updatedPlayers.isEmpty()) {
+                if (newTitulaireCount == 0 || newImpostorCount == 0 || updatedPlayers.isEmpty() ||
+                    (newTitulaireCount == 1 && newImpostorCount == 1)) {
                     // Passage à l'écran de victoire
                     navController.navigate("victoryScreen")
                 } else {
-                    // Passer au tour suivant
-                    turnManager.moveToNextTurn()
-
                     // Retour à l'écran de jeu
                     navController.navigate("gameScreen")
                 }
@@ -179,39 +178,14 @@ fun VoteScreen(
                 }
             }
 
-            
-
-            // Afficher le tour actuel
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Tour $currentTurn",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Choisissez un joueur à éliminer",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
+            // Afficher le titre de l'écran
+            Text(
+                text = "Sélectionnez un joueur à éliminer",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
             // Liste des joueurs pour le vote
             LazyColumn(
@@ -338,8 +312,6 @@ fun VoteScreen(
             TextButton(
                 onClick = {
                     scope.launch {
-                        // Passer au tour suivant sans éliminer
-                        turnManager.moveToNextTurn()
                         navController.navigate("gameScreen")
                     }
                 },

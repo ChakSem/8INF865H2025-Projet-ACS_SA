@@ -49,10 +49,8 @@ fun GameScreen(
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
 
-    // Récupérer les informations de tour actuel
-    val currentTurn by turnManager.currentTurnFlow.collectAsState(initial = 1)
+    // Récupérer les informations de l'ordre des joueurs
     val playersOrder by turnManager.playersOrderFlow.collectAsState(initial = emptyList())
-    val currentPlayerIndex by turnManager.currentPlayerIndexFlow.collectAsState(initial = 0)
 
     // Récupérer le mot secret des titulaires
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
@@ -80,16 +78,12 @@ fun GameScreen(
     // Compter les imposteurs (Remplaçants + Footix)
     val impostorCount = footixCount + remplacantCount
 
-    // Vérifier si le jeu peut continuer
-    val gameCanContinue = titulaireCount > 0 && impostorCount > 0
-
-    // Obtenir le joueur actuel s'il existe
-    val currentPlayer = if (playersOrder.isNotEmpty() && currentPlayerIndex < playersOrder.size) {
-        playersOrder[currentPlayerIndex]
-    } else null
-
-    // Vérifier si tous les joueurs ont joué dans ce tour
-    val isLastPlayerInTurn = currentPlayerIndex >= playersOrder.size - 1
+    // Vérifier si le jeu peut continuer et les conditions spéciales de fin
+    val gameCanContinue = when {
+        titulaireCount == 0 || impostorCount == 0 -> false
+        titulaireCount == 1 && impostorCount == 1 -> false // Si 1 titu et 1 imposteur, fin de jeu (les imposteurs gagnent)
+        else -> true
+    }
 
     // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
@@ -114,15 +108,17 @@ fun GameScreen(
 
     // Vérifier les conditions de victoire après que toutes les données sont chargées
     LaunchedEffect(registeredPlayers) {
-        // Seulement si nous avons des joueurs et que la vérification initiale n'a pas été faite
+        // Seulement si nous avons des joueurs et que la vérification initiale a été faite
         if (registeredPlayers.isNotEmpty() && initialCheckDone) {
-            // Ne vérifier les conditions de victoire que si le jeu ne peut pas continuer
+            // Vérifier les conditions spéciales de fin
             if (!gameCanContinue) {
                 // Si le jeu ne peut plus continuer, aller à l'écran de victoire
                 navController.navigate("victoryScreen")
             }
         }
     }
+
+
 
     // Effectuer la vérification initiale après un petit délai pour s'assurer que tout est chargé
     LaunchedEffect(Unit) {
@@ -183,7 +179,7 @@ fun GameScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // En-tête avec informations de tour et boutons
+            // En-tête avec informations et boutons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,7 +202,7 @@ fun GameScreen(
                 }
 
                 Text(
-                    text = "Tour ${currentTurn}",
+                    text = "Phase de jeu",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -240,7 +236,7 @@ fun GameScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Tour $currentTurn",
+                        text = "Phase de jeu",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -249,7 +245,7 @@ fun GameScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Les joueurs doivent proposer un mot en suivant l'ordre ci-dessous. Une fois tous les joueurs passés, vous pourrez voter pour éliminer un joueur.",
+                        text = "Les joueurs doivent proposer un mot en suivant l'ordre ci-dessous. Une fois la discussion terminée, vous pourrez passer au vote pour éliminer un joueur.",
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -272,7 +268,7 @@ fun GameScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Ordre de passage",
+                        text = "Ordre de passage a suivre",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -283,24 +279,12 @@ fun GameScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         itemsIndexed(playersOrder) { index, player ->
-                            val isCurrentPlayer = index == currentPlayerIndex
-
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(
-                                        width = if (isCurrentPlayer) 2.dp else 1.dp,
-                                        color = if (isCurrentPlayer)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.outline,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .background(
-                                        color = if (isCurrentPlayer)
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                        else
-                                            Color.Transparent,
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.outline,
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                     .padding(8.dp)
@@ -364,7 +348,7 @@ fun GameScreen(
                 }
             }
 
-            // Bouton pour aller directement au vote
+            // Bouton pour aller au vote
             Button(
                 onClick = {
                     scope.launch {

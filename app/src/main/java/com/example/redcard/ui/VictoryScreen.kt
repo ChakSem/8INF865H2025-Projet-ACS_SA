@@ -72,6 +72,7 @@ fun VictoryScreen(
         titulairePlayers.isEmpty() && remplacantPlayers.isNotEmpty() && footixPlayers.isEmpty() -> "Les Remplaçants"
         titulairePlayers.isEmpty() && remplacantPlayers.isEmpty() && footixPlayers.isNotEmpty() -> "Les Footix"
         titulairePlayers.isEmpty() && impostorCount > 0 -> "Les Imposteurs" // Cas où les remplaçants ET footix restent
+        titulairePlayers.size == 1 && impostorCount == 1 -> "Les Imposteurs" // Cas spécial: 1 titu, 1 imposteur
         else -> "Personne"
     }
 
