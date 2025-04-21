@@ -61,6 +61,11 @@ class DataStoreManager(private val context: Context) {
         // Nouvelles clés pour la gestion des mots par rôle
         val TITULAIRE_WORD_KEY = stringPreferencesKey("titulaire_word")
         val REMPLACANT_WORD_KEY = stringPreferencesKey("remplacant_word")
+
+        // Clé pour savoir si le jeu est terminé
+        val GAME_COMPLETED_KEY = booleanPreferencesKey("game_completed")
+
+
     }
 
 
@@ -74,6 +79,11 @@ class DataStoreManager(private val context: Context) {
     val secretWordsFlow: Flow<Set<String>> = context.dataStore.data
         .map { it[SECRET_WORDS_KEY] ?: defaultSecretWords }
 
+    // Flux pour savoir si le jeu est terminé
+    val gameCompletedFlow: Flow<Boolean> = context.dataStore.data
+    .map { it[GAME_COMPLETED_KEY] ?: false }
+
+    // Flux pour le mot de ballon sélectionné
     val selectedBallWordFlow: Flow<String?> = context.dataStore.data
         .map { it[SELECTED_BALL_WORD_KEY] }
 
@@ -123,6 +133,11 @@ class DataStoreManager(private val context: Context) {
             } else {
                 it.remove(CURRENT_BALL_KEY)
             }
+        }
+    }
+    suspend fun markGameAsCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[GAME_COMPLETED_KEY] = true
         }
     }
 
@@ -352,21 +367,12 @@ class DataStoreManager(private val context: Context) {
             emptyList()
         }
     }
-    // // Ajout d'une méthode pour vérifier si un nom de joueur est déjà utilisé
-    // val isPlayerNameTakenFlow: Flow<Boolean> = combine(
-    //     registeredPlayersFlow,
-    //     playerNameFlow
-    // ) { players, currentName ->
-    //     currentName?.let { name ->
-    //         players.any { it.name.equals(name, ignoreCase = true) }
-    //     } ?: false
-    //}
+
     fun isPlayerNameTakenFlow(name: String) = context.dataStore.data.map { preferences ->
         val registeredPlayers = getRegisteredPlayersFromPreferences(preferences)
         registeredPlayers.any { it.name == name }
     }
 
-    // Modification de resetGame pour réinitialiser complètement le jeu
     suspend fun resetGame(turnManager: TurnManager? = null) {
         context.dataStore.edit { preferences ->
             preferences.remove(REGISTERED_PLAYERS_KEY)
@@ -379,6 +385,7 @@ class DataStoreManager(private val context: Context) {
             preferences.remove(SELECTED_BALL_WORD_KEY)
             preferences.remove(TITULAIRE_WORD_KEY)
             preferences.remove(REMPLACANT_WORD_KEY)
+            preferences.remove(GAME_COMPLETED_KEY) 
         }
         
         // Réinitialiser aussi le TurnManager si fourni

@@ -116,6 +116,13 @@ fun VictoryScreen(
     val textColor = MaterialTheme.colorScheme.onBackground
     val iconColor = if (darkTheme) Color.White else Color.Black
 
+    LaunchedEffect(Unit) {
+        // Marquer la partie comme terminée
+        dataStoreManager.markGameAsCompleted()
+        
+        // Musique de victoire (code existant)
+        MusicPlayerManager.playMusicVictory(context)
+    }
     // Musique de fond
     LaunchedEffect(Unit) {
         MusicPlayerManager.playMusicVictory(context)

@@ -42,6 +42,7 @@ fun HomeScreen(
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
     val allPlayersRegistered by dataStoreManager.allPlayersRegisteredFlow.collectAsState(initial = false)
     var showContinueDialog by remember { mutableStateOf(false) }
+    val gameCompleted by dataStoreManager.gameCompletedFlow.collectAsState(initial = false)
 
     // Ajout du scope de coroutine manquant
     val scope = rememberCoroutineScope()
@@ -124,10 +125,10 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(innerPadding)
             .clickable {
-                if (registeredPlayers.isNotEmpty()) {
+                if (registeredPlayers.isNotEmpty() && !gameCompleted) {
                     showContinueDialog = true
                 } else {
-                    // Si aucun joueur enregistré, aller directement à la configuration
+                    // Si aucun joueur enregistré ou partie terminée, aller directement à la configuration
                     navController.navigate("startingPage") {
                         // Clear the back stack to prevent going back to the home screen
                         popUpTo("home") { inclusive = true }
