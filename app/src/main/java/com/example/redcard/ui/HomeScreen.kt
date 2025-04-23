@@ -142,10 +142,10 @@ fun HomeScreen(
     ) {
         // Image de fond
         Image(
-            painter = painterResource(id = R.drawable.background_image), // Remplace 'background_image' par ton image de fond
+            painter = painterResource(id = R.drawable.background_image), 
             contentDescription = "Background Image",
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop // Cette option permet d'ajuster l'image pour qu'elle couvre tout l'écran
+            contentScale = ContentScale.Crop 
         )
 
         Column(
@@ -165,10 +165,29 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Utilisation de Coil pour afficher le SVG
+                var showLanguageDialog by remember { mutableStateOf(false) }
+
+                if (showLanguageDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showLanguageDialog = false },
+                        title = { Text("Langue disponible") },
+                        text = { Text("Pour la version actuelle, seul le français est disponible.") },
+                        confirmButton = {
+                            Button(onClick = { showLanguageDialog = false }) {
+                                Text("OK")
+                            }
+                        }
+                    )
+                }
+
                 Image(
-                    painter = rememberAsyncImagePainter(R.drawable.drapeau_francais), // SVG du drapeau français
+                    painter = rememberAsyncImagePainter(R.drawable.drapeau_francais),
                     contentDescription = "Drapeau Français",
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
+                            showLanguageDialog = true
+                        }
                 )
 
                 Icon(
