@@ -258,7 +258,7 @@ fun VoteScreen(
                     fontWeight = FontWeight.Medium
                 )
             }
-            
+
         }
     }
 }

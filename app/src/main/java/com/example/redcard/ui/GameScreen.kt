@@ -47,7 +47,6 @@ fun GameScreen(
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
     val playersOrder by turnManager.playersOrderFlow.collectAsState(initial = emptyList())
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
-    var showWord by remember { mutableStateOf(false) }
     var selectedPlayer by remember { mutableStateOf<Player?>(null) }
     var showWordDialog by remember { mutableStateOf(false) }
     var isWordVisible by remember { mutableStateOf(false) }

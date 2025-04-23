@@ -68,7 +68,7 @@ fun ChoosePlayerBallScreen(
         dataStoreManager.resetPlayerPhoto()
     }
     
-    // Création d'une liste plate des ballons disponibles
+    // Création d'une liste des ballons disponibles
     val availableRolesList = remember(availableBalls) {
         availableBalls.flatMap { (role, count) ->
             List(count) { role }

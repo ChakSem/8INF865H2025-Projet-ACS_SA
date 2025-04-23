@@ -44,7 +44,6 @@ fun GameIntroductionScreen(
     val backgroundColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
     val backgroundButton = MaterialTheme.colorScheme.primary
-    val iconColor = if (darkTheme) Color.White else Color.Black
 
     Surface(color = Color.White) {
         Column(

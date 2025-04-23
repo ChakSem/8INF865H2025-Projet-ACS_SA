@@ -4,10 +4,15 @@ import android.content.Context
 import android.media.MediaPlayer
 import com.example.redcard.R
 
+
+/**
+ * Singleton gérant la lecture de la musique dans l'application.
+ * Permet de jouer, mettre en pause, et arrêter différentes pistes sonores.
+ */
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
     private var isInitialized = false
-    private var currentResId: Int? = null // ➕ ajouté
+    private var currentResId: Int? = null
     var isPlaying = true
 
     fun playMusicIntro(context: Context) {
@@ -28,7 +33,7 @@ object MusicPlayerManager {
             isLooping = false
             start()
             setOnCompletionListener {
-                stopMusic() // ou juste isPlaying = false si tu veux le garder
+                stopMusic()
             }
         }
         currentResId = R.raw.victory
@@ -36,7 +41,10 @@ object MusicPlayerManager {
         isPlaying = true
     }
 
-
+    /**
+     * Démarre une nouvelle piste musicale en arrêtant celle en cours si nécessaire.
+     * Si la même piste est déjà chargée mais en pause, la reprend.
+     */
     private fun startNewMusic(context: Context, resId: Int) {
         if (mediaPlayer == null || currentResId != resId) {
             stopMusic()
@@ -64,9 +72,13 @@ object MusicPlayerManager {
         mediaPlayer = null
         isInitialized = false
         isPlaying = false
-        currentResId = null // ➕ réinitialiser
+        currentResId = null
     }
 
+    /**
+     * Active ou désactive la musique en fonction du paramètre enabled.
+     * Si activée, joue la musique spécifiée par musicToPlay.
+     */
     fun toggleMusic(enabled: Boolean, context: Context, musicToPlay: () -> Unit) {
         if (enabled) {
             if (!isPlaying) {
@@ -83,8 +95,4 @@ object MusicPlayerManager {
             isPlaying = true
         }
     }
-
 }
-
-
-
