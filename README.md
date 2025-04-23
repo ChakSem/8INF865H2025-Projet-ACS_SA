@@ -6,7 +6,7 @@ RedCard est une application mobile Android développée avec Jetpack Compose. Il
 
 ### *Fonctionnalités principales*
 
-- Attribution aléatoire des rôles : Titulaire, Remplaçant, Joueur mystère
+- Attribution aléatoire des rôles : Titulaire, Remplaçant, Footix
 - Navigation fluide entre les écrans grâce à Jetpack Navigation
 - Système de mots secrets et d’improvisation pour créer une tension de bluff
 - Vote final entre les joueurs pour identifier les imposteurs
