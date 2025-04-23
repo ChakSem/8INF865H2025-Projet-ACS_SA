@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,7 +46,6 @@ fun PlayerSetupScreen(
 
     // Récupérer le mot du ballon sélectionné et le rôle
     val currentBall by dataStoreManager.currentBallFlow.collectAsState(initial = null)
-    val currentRole by dataStoreManager.currentRoleFlow.collectAsState(initial = null)
 
     // Afficher au joueur son mot et son rôle
     var showWordDialog by remember { mutableStateOf(false) }
@@ -78,9 +78,17 @@ fun PlayerSetupScreen(
         isSubmitting = false
         photoTimestamp = System.currentTimeMillis() // Force recomposition pour l'image
         
-        // Réinitialiser également la valeur dans le DataStore si nécessaire
+        // Réinitialiser d'abord dans le DataStore
         dataStoreManager.resetPlayerPhoto()
         dataStoreManager.resetPlayerName()
+        
+        // Puis réinitialiser les valeurs locales
+        delay(100) // Petit délai pour s'assurer que le datastore a bien été mis à jour
+        playerName = ""
+        currentPhotoUri = null
+        errorMessage = null
+        isSubmitting = false
+        photoTimestamp = System.currentTimeMillis() // Force recomposition pour l'image
 
     }
 
@@ -280,10 +288,11 @@ fun PlayerSetupScreen(
             Box(
                 modifier = Modifier
                     .size(200.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
-                key(photoTimestamp) { // Pour forcer la recomposition lorsque on se reprend en photo
+                key(photoTimestamp) {
                     if (currentPhotoUri != null) {
                         Image(
                             painter = rememberAsyncImagePainter(
@@ -294,6 +303,7 @@ fun PlayerSetupScreen(
                             modifier = Modifier.fillMaxSize()
                         )
 
+                        // Bouton pour reprendre la photo (reste comme avant)
                         IconButton(
                             onClick = { takeNewPhoto() },
                             modifier = Modifier
@@ -307,15 +317,34 @@ fun PlayerSetupScreen(
                             )
                         }
                     } else {
-                        IconButton(
-                            onClick = { takeNewPhoto() }
+                        // Ajout d'un cadre visuel pour indiquer que c'est une zone cliquable
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_camera),
                                 contentDescription = "Prendre une photo",
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Prendre une photo",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
+                        
+                        // Rendre toute la zone cliquable
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { takeNewPhoto() }
+                        )
                     }
                 }
             }

@@ -48,6 +48,7 @@ fun ChoosePlayerBallScreen(
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
     val allPlayersRegistered by dataStoreManager.allPlayersRegisteredFlow.collectAsState(initial = false)
     val availableBalls by dataStoreManager.availableBallsFlow.collectAsState(initial = emptyMap())
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     // Récupérer les mots des titulaires et remplaçants
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
@@ -67,6 +68,11 @@ fun ChoosePlayerBallScreen(
         }
     }
 
+    LaunchedEffect(currentBackStackEntry) {
+        // Réinitialiser la photo quand on revient sur cet écran
+        dataStoreManager.resetPlayerPhoto()
+    }
+    
     // Créer une liste aplatie des ballons disponibles à partir de la map availableBalls
     val availableRolesList = remember(availableBalls) {
         availableBalls.flatMap { (role, count) ->

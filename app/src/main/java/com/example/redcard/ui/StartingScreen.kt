@@ -32,17 +32,22 @@ import com.example.redcard.ui.theme.ThemeViewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.redcard.data.DataStoreManager
 import com.example.redcard.model.MusicPlayerManager
 
 
 @Composable
-fun StartingPage(navController: NavController, themeViewModel: ThemeViewModel) {
+fun StartingPage(navController: NavController, dataStoreManager: DataStoreManager, themeViewModel: ThemeViewModel) {
 
     // Musique de fond
     val context = LocalContext.current
+    val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
+
 
     LaunchedEffect(Unit) {
-        MusicPlayerManager.playMusicSalon(context)
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicSalon(context)
+        }
     }
 
     // Observer le thème actuel

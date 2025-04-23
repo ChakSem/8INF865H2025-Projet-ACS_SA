@@ -25,7 +25,7 @@ object MusicPlayerManager {
     fun playMusicVictory(context: Context) {
         stopMusic()
         mediaPlayer = MediaPlayer.create(context, R.raw.victory).apply {
-            isLooping = false // ❌ ne pas boucler
+            isLooping = false
             start()
             setOnCompletionListener {
                 stopMusic() // ou juste isPlaying = false si tu veux le garder

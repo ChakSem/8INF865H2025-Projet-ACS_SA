@@ -43,6 +43,7 @@ fun HomeScreen(
     val allPlayersRegistered by dataStoreManager.allPlayersRegisteredFlow.collectAsState(initial = false)
     var showContinueDialog by remember { mutableStateOf(false) }
     val gameCompleted by dataStoreManager.gameCompletedFlow.collectAsState(initial = false)
+    val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
 
     // Ajout du scope de coroutine manquant
     val scope = rememberCoroutineScope()
@@ -51,7 +52,9 @@ fun HomeScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        MusicPlayerManager.playMusicIntro(context)
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicIntro(context)
+        }
     }
 
     // Animation pour alterner la visibilité du texte

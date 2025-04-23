@@ -45,6 +45,7 @@ fun GameScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
 
     // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
@@ -98,7 +99,9 @@ fun GameScreen(
     // Initialiser l'ordre des joueurs au premier chargement ou quand les joueurs changent
     LaunchedEffect(registeredPlayers) {
         // Démarrer la musique de jeu
-        MusicPlayerManager.playMusicGame(context)
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicGame(context)
+        }
 
         // Synchroniser les joueurs du TurnManager avec ceux du DataStore
         if (registeredPlayers.isNotEmpty()) {

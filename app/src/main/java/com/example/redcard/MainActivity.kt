@@ -65,7 +65,7 @@ fun AppNavigation(themeViewModel: ThemeViewModel, turnManager: TurnManager) {
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController, dataStoreManager) }
-        composable("startingPage") { StartingPage(navController, themeViewModel) }
+        composable("startingPage") { StartingPage(navController,dataStoreManager, themeViewModel) }
         composable("gameConfiguration") {
             ConfigurationScreen(
                 navController,

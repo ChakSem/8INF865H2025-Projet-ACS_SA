@@ -33,9 +33,7 @@ fun GeneralSettingScreen(
     // Observer l'état du thème
     val currentTheme by themeViewModel.theme.collectAsState()
 
-    var soundEnabled by remember { mutableStateOf(true) }
     var notificationsEnabled by remember { mutableStateOf(true) }
-    var musicEnabled by remember { mutableStateOf(true) }
 
     var themeExpanded by remember { mutableStateOf(false) }
 
@@ -80,12 +78,14 @@ fun GeneralSettingScreen(
                         checked = musicEnabled,
                         onCheckedChange = {
                             musicEnabled = it
-                            MusicPlayerManager.toggleMusic(
-                                enabled = it,
-                                context = context
-                            ) {
-                                // Rejoue la bonne musique si activé
-                                MusicPlayerManager.resumeMusic()
+                            scope.launch {
+                                dataStoreManager.setMusicEnabled(it)
+                                MusicPlayerManager.toggleMusic(
+                                    enabled = it,
+                                    context = context
+                                ) {
+                                    if (it) MusicPlayerManager.resumeMusic() else MusicPlayerManager.stopMusic()
+                                }
                             }
                         }
                     )

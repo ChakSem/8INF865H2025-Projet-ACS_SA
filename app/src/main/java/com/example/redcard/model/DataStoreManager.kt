@@ -51,6 +51,7 @@ class DataStoreManager(private val context: Context) {
         val PLAYER_PHOTO_URI_KEY = stringPreferencesKey("player_photo_uri")
         val PLAYER_NAME_KEY = stringPreferencesKey("player_name")
         val SELECTED_BALLS_KEY = stringSetPreferencesKey("selected_balls")
+        val MUSIC_ENABLED_KEY = booleanPreferencesKey("music_enabled")
 
         // Clés pour la gestion des comptes et des mots
         val REGISTERED_PLAYERS_KEY = stringPreferencesKey("registered_players")
@@ -82,6 +83,12 @@ class DataStoreManager(private val context: Context) {
     // Flux pour savoir si le jeu est terminé
     val gameCompletedFlow: Flow<Boolean> = context.dataStore.data
     .map { it[GAME_COMPLETED_KEY] ?: false }
+    // Ajoutez cette propriété
+    val musicEnabledFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[MUSIC_ENABLED_KEY] ?: true // true par défaut
+        }
+
 
     // Flux pour le mot de ballon sélectionné
     val selectedBallWordFlow: Flow<String?> = context.dataStore.data
@@ -154,6 +161,12 @@ class DataStoreManager(private val context: Context) {
                     it[REMPLACANT_WORD_KEY] = shuffledWords[1]
                 }
             }
+        }
+    }
+    // Ajoutez cette méthode
+    suspend fun setMusicEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[MUSIC_ENABLED_KEY] = enabled
         }
     }
 
@@ -406,6 +419,16 @@ class DataStoreManager(private val context: Context) {
     suspend fun resetPlayerPhoto() {
         context.dataStore.edit { preferences ->
             preferences.remove(PLAYER_PHOTO_URI_KEY)
+        }
+        
+        // Supprimer également tous les fichiers photos temporaires
+        val photoDir = File(context.filesDir, "player_photos")
+        if (photoDir.exists()) {
+            photoDir.listFiles()?.forEach { file ->
+                if (file.name.startsWith("player_photo_")) {
+                    file.delete()
+                }
+            }
         }
     }
 

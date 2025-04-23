@@ -47,6 +47,7 @@ fun VictoryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
 
     // Gestion du bouton retour arrière (Back)
     BackHandler {
@@ -119,13 +120,16 @@ fun VictoryScreen(
     LaunchedEffect(Unit) {
         // Marquer la partie comme terminée
         dataStoreManager.markGameAsCompleted()
-        
-        // Musique de victoire (code existant)
-        MusicPlayerManager.playMusicVictory(context)
+
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicVictory(context)
+        }
     }
     // Musique de fond
     LaunchedEffect(Unit) {
-        MusicPlayerManager.playMusicVictory(context)
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicVictory(context)
+        }
     }
 
     Box(
