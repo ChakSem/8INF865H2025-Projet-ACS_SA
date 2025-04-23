@@ -93,7 +93,6 @@ fun GeneralSettingScreen(
             )
             SettingDivider()
 
-            // Apparence (thème)
             SettingItem(
                 icon = Icons.Default.DarkMode,
                 title = "Apparence",
@@ -132,30 +131,30 @@ fun GeneralSettingScreen(
                     }
                 }
             )
-            SettingDivider()
+            // SettingDivider()
 
-            // Notifications
-            SettingItem(
-                icon = Icons.Default.Notifications,
-                title = "Notifications",
-                trailing = {
-                    Switch(
-                        checked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it }
-                    )
-                }
-            )
-            SettingDivider()
+            // // Notifications
+            // SettingItem(
+            //     icon = Icons.Default.Notifications,
+            //     title = "Notifications",
+            //     trailing = {
+            //         Switch(
+            //             checked = notificationsEnabled,
+            //             onCheckedChange = { notificationsEnabled = it }
+            //         )
+            //     }
+            // )
+            // SettingDivider()
 
-            // Évaluer l'application
-            SettingItem(
-                icon = Icons.Default.Favorite,
-                title = "Évaluer l'application",
-                titleColor = Color.Red,
-                onClick = {
-                    // Rediriger vers Play Store
-                }
-            )
+            // // Évaluer l'application
+            // SettingItem(
+            //     icon = Icons.Default.Favorite,
+            //     title = "Évaluer l'application",
+            //     titleColor = Color.Red,
+            //     onClick = {
+            //         // Rediriger vers Play Store
+            //     }
+            // )
         }
     }
 }
@@ -201,7 +200,7 @@ private fun SettingItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = titleColor,
-                modifier = Modifier.size(28.dp) // Taille un peu plus grande
+                modifier = Modifier.size(28.dp) 
             )
 
             Text(
