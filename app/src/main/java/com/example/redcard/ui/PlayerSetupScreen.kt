@@ -30,39 +30,29 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.flowOf
 
-
 @Composable
 fun PlayerSetupScreen(
     navController: NavController,
     dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier
-) 
-    {
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var playerName by remember { mutableStateOf("") }
     var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var photoTimestamp by remember { mutableStateOf(0L) }
     val savedPhotoUri by dataStoreManager.playerPhotoUriFlow.collectAsState(initial = null)
-
-    // Récupérer le mot du ballon sélectionné et le rôle
     val currentBall by dataStoreManager.currentBallFlow.collectAsState(initial = null)
-
-    // Afficher au joueur son mot et son rôle
     var showWordDialog by remember { mutableStateOf(false) }
 
     // Vérifier si un joueur a déjà ce nom
-    // Définir d'abord le flow
     val playerNameTakenFlow = if (playerName.isBlank()) {
-        // Flow qui émet toujours false
         flowOf(false)
     } else {
         dataStoreManager.isPlayerNameTakenFlow(playerName)
     }
 
-    // Puis collecter le state de ce flow directement dans le contexte Composable
     val isPlayerNameTaken by playerNameTakenFlow.collectAsState(initial = false)
-    // État pour gérer les erreurs et le chargement
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -71,26 +61,18 @@ fun PlayerSetupScreen(
             currentPhotoUri = Uri.parse(it)
         }
     }
+
     LaunchedEffect(Unit) {
         // Réinitialiser les valeurs à chaque fois que l'écran est affiché
-        playerName = ""
-        currentPhotoUri = null
-        errorMessage = null
-        isSubmitting = false
-        photoTimestamp = System.currentTimeMillis() // Force recomposition pour l'image
-        
-        // Réinitialiser d'abord dans le DataStore
         dataStoreManager.resetPlayerPhoto()
         dataStoreManager.resetPlayerName()
-        
-        // Puis réinitialiser les valeurs locales
+
         delay(100) // Petit délai pour s'assurer que le datastore a bien été mis à jour
         playerName = ""
         currentPhotoUri = null
         errorMessage = null
         isSubmitting = false
-        photoTimestamp = System.currentTimeMillis() // Force recomposition pour l'image
-
+        photoTimestamp = System.currentTimeMillis()
     }
 
     var hasCameraPermission by remember {
@@ -101,20 +83,18 @@ fun PlayerSetupScreen(
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
-    
-    // Déclaration du lambda en tant que variable mutable pour pouvoir l'utiliser dans sa propre définition
+
     var takeNewPhoto: () -> Unit by remember { mutableStateOf({}) }
-    
+
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && currentPhotoUri != null) {
             scope.launch {
                 dataStoreManager.savePlayerPhotoUri(currentPhotoUri.toString())
-                photoTimestamp = System.currentTimeMillis() // Force recomposition
+                photoTimestamp = System.currentTimeMillis()
             }
         } else {
-            // Informer l'utilisateur que la prise de photo a échoué
             Toast.makeText(
                 context,
                 "La prise de photo a échoué, veuillez réessayer",
@@ -122,16 +102,14 @@ fun PlayerSetupScreen(
             ).show()
         }
     }
-    
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
         if (isGranted) {
-            // Si la permission est accordée, on lance directement la caméra
             takeNewPhoto()
         } else {
-            // Informer l'utilisateur que la permission est nécessaire
             Toast.makeText(
                 context,
                 "La permission de la caméra est nécessaire pour prendre une photo",
@@ -140,7 +118,6 @@ fun PlayerSetupScreen(
         }
     }
 
-    // Définition du lambda après sa déclaration
     takeNewPhoto = {
         if (hasCameraPermission) {
             val photoFile = dataStoreManager.getPhotoFile()
@@ -152,7 +129,6 @@ fun PlayerSetupScreen(
                 )
                 cameraLauncher.launch(currentPhotoUri)
             } catch (e: Exception) {
-                // Gérer les erreurs
                 Toast.makeText(
                     context,
                     "Erreur lors de la préparation de l'appareil photo: ${e.message}",
@@ -165,7 +141,6 @@ fun PlayerSetupScreen(
         }
     }
 
-    // Fonction pour enregistrer le joueur
     fun registerPlayer() {
         if (playerName.isBlank()) {
             errorMessage = "Le nom du joueur ne peut pas être vide"
@@ -177,27 +152,21 @@ fun PlayerSetupScreen(
             return
         }
 
-
         isSubmitting = true
         errorMessage = null
         scope.launch {
-                try {
-                    // Sauvegarder le nom du joueur pour la page suivante
-                    dataStoreManager.savePlayerName(playerName)
+            try {
+                dataStoreManager.savePlayerName(playerName)
+                dataStoreManager.registerPlayer(playerName, currentPhotoUri?.toString())
 
-                    // Enregistrer le joueur avec son rôle et son mot
-                    dataStoreManager.registerPlayer(playerName, currentPhotoUri?.toString())
+                delay(500)
 
-                    // Donner le temps au DataStore de mettre à jour ses données
-                    delay(500)
-
-                    // Forcer un rafraîchissement après navigation
-                    withContext(Dispatchers.Main) {
-                        navController.navigate("ChoosePlayerBallScreen") {
-                            popUpTo("ChoosePlayerBallScreen") { inclusive = true }
-                        }
+                withContext(Dispatchers.Main) {
+                    navController.navigate("ChoosePlayerBallScreen") {
+                        popUpTo("ChoosePlayerBallScreen") { inclusive = true }
                     }
-                }catch (e: Exception) {
+                }
+            } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     errorMessage = "Erreur lors de l'enregistrement: ${e.message}"
                     isSubmitting = false
@@ -206,7 +175,6 @@ fun PlayerSetupScreen(
         }
     }
 
-    // Dialogue pour afficher le mot secret au joueur
     if (showWordDialog) {
         AlertDialog(
             onDismissRequest = { showWordDialog = false },
@@ -277,8 +245,6 @@ fun PlayerSetupScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            //TODO: A enlever pour la Version finale
-            // Zone pour afficher les erreurs
             errorMessage?.let {
                 Text(
                     text = it,
@@ -305,7 +271,6 @@ fun PlayerSetupScreen(
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        // Bouton pour reprendre la photo (reste comme avant)
                         IconButton(
                             onClick = { takeNewPhoto() },
                             modifier = Modifier
@@ -319,7 +284,6 @@ fun PlayerSetupScreen(
                             )
                         }
                     } else {
-                        // Ajout d'un cadre visuel pour indiquer que c'est une zone cliquable
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
@@ -340,8 +304,7 @@ fun PlayerSetupScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
-                        // Rendre toute la zone cliquable
+
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -371,7 +334,6 @@ fun PlayerSetupScreen(
             ) {
                 Text("Voir mon mot secret")
             }
-
         }
     }
 }

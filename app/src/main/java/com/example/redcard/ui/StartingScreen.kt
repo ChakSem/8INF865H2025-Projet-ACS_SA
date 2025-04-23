@@ -35,14 +35,10 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.model.MusicPlayerManager
 
-
 @Composable
 fun StartingPage(navController: NavController, dataStoreManager: DataStoreManager, themeViewModel: ThemeViewModel) {
-
-    // Musique de fond
     val context = LocalContext.current
     val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
-
 
     LaunchedEffect(Unit) {
         if (musicEnabled) {
@@ -50,21 +46,17 @@ fun StartingPage(navController: NavController, dataStoreManager: DataStoreManage
         }
     }
 
-    // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminer si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
-        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
     }
 
-    // Appliquer le thème global ici
     RedCardTheme(darkTheme = darkTheme) {
         val backgroundColor = MaterialTheme.colorScheme.background
         val textColor = MaterialTheme.colorScheme.onBackground
-        val iconColor = if (darkTheme) Color.White else Color.Black // Icônes blanches si thème clair, sinon couleur par défaut
+        val iconColor = if (darkTheme) Color.White else Color.Black
 
         var textPosition by remember { mutableStateOf(Offset.Zero) }
         var iconPosition by remember { mutableStateOf(Offset.Zero) }
@@ -96,7 +88,6 @@ fun StartingPage(navController: NavController, dataStoreManager: DataStoreManage
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Image(
@@ -134,16 +125,16 @@ fun StartingPage(navController: NavController, dataStoreManager: DataStoreManage
                         }
                 )
 
-                Spacer(modifier = Modifier.weight(1f)) // Ce spacer permet d'espacer le contenu principal
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             // Barre de tâches en bas
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(if (darkTheme) Color(0xFF34465B) else Color(0xFF1F2936)) // Bleu-gris foncé pour les deux thèmes
+                    .background(if (darkTheme) Color(0xFF34465B) else Color(0xFF1F2936))
                     .padding(16.dp)
-                    .align(Alignment.BottomCenter), // Alignement en bas de l'écran
+                    .align(Alignment.BottomCenter),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Icon(
@@ -176,13 +167,14 @@ fun StartingPage(navController: NavController, dataStoreManager: DataStoreManage
                 )
             }
 
+            // Animation du guide visuel
             if (firstClickDone) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     if (iconPosition != Offset.Zero) {
                         drawCircle(
                             color = Color(0xFFFFD700),
-                            radius = 30f * circleScale,  // Ajusté pour la taille de l'icône (TODO : a adapter)
-                            center = iconPosition + Offset(20f, 20f),  // Centré sur l'icône (TODO : a adapter)
+                            radius = 30f * circleScale,
+                            center = iconPosition + Offset(20f, 20f),
                             style = Stroke(width = 4f)
                         )
                     }
@@ -213,9 +205,6 @@ fun StartingPage(navController: NavController, dataStoreManager: DataStoreManage
                 }
             }
         }
-
     }
 }
-
-
 

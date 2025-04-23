@@ -1,6 +1,5 @@
 package com.example.redcard.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,7 +34,6 @@ import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.RedCardTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
-
 @Composable
 fun GameScreen(
     navController: NavController,
@@ -46,91 +44,59 @@ fun GameScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
-
-    // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
-
-    // Récupérer les informations de l'ordre des joueurs
     val playersOrder by turnManager.playersOrderFlow.collectAsState(initial = emptyList())
-
-    // Récupérer le mot secret des titulaires
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
-
-    // État pour gérer l'affichage du mot
     var showWord by remember { mutableStateOf(false) }
-
-    // État pour le joueur sélectionné pour voir son mot secret
     var selectedPlayer by remember { mutableStateOf<Player?>(null) }
-
-    // État pour contrôler l'affichage de la boîte de dialogue
     var showWordDialog by remember { mutableStateOf(false) }
-
-    // État pour contrôler si le mot est visible dans la boîte de dialogue
     var isWordVisible by remember { mutableStateOf(false) }
-
-    // État pour suivre si la vérification initiale a été faite
     var initialCheckDone by remember { mutableStateOf(false) }
 
-    // Compter les joueurs par rôle
+    // Comptage des joueurs par rôle pour déterminer les conditions de fin de jeu
     val titulaireCount = registeredPlayers.count { it.role == "Titulaire" }
     val footixCount = registeredPlayers.count { it.role == "Footix" }
     val remplacantCount = registeredPlayers.count { it.role == "Remplaçant" }
-
-    // Compter les imposteurs (Remplaçants + Footix)
     val impostorCount = footixCount + remplacantCount
 
-    // Vérifier si le jeu peut continuer et les conditions spéciales de fin
+    // Conditions de fin de jeu
     val gameCanContinue = when {
         titulaireCount == 0 || impostorCount == 0 -> false
-        titulaireCount == 1 && impostorCount == 1 -> false // Si 1 titu et 1 imposteur, fin de jeu (les imposteurs gagnent)
+        titulaireCount == 1 && impostorCount == 1 -> false // 1 titu vs 1 imposteur = fin de jeu
         else -> true
     }
 
-    // Observer le thème actuel
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminer si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
-        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
     }
-
-    // Initialiser l'ordre des joueurs au premier chargement ou quand les joueurs changent
+    
     LaunchedEffect(registeredPlayers) {
-        // Démarrer la musique de jeu
-        if (musicEnabled) {
-            MusicPlayerManager.playMusicGame(context)
-        }
-
-        // Synchroniser les joueurs du TurnManager avec ceux du DataStore
+  
         if (registeredPlayers.isNotEmpty()) {
             turnManager.syncPlayersWithDataStore(dataStoreManager.registeredPlayersFlow)
         }
     }
 
-    // Vérifier les conditions de victoire après que toutes les données sont chargées
     LaunchedEffect(registeredPlayers) {
-        // Seulement si nous avons des joueurs et que la vérification initiale a été faite
         if (registeredPlayers.isNotEmpty() && initialCheckDone) {
-            // Vérifier les conditions spéciales de fin
             if (!gameCanContinue) {
-                // Si le jeu ne peut plus continuer, aller à l'écran de victoire
                 navController.navigate("victoryScreen")
             }
         }
     }
 
-
-
-    // Effectuer la vérification initiale après un petit délai pour s'assurer que tout est chargé
     LaunchedEffect(Unit) {
-        // Attendre que les données soient chargées avant de faire la vérification
+        if (musicEnabled) {
+            MusicPlayerManager.playMusicGame(context)
+        }
         kotlinx.coroutines.delay(300)
         initialCheckDone = true
     }
 
-    // Boîte de dialogue pour afficher le mot secret
+    // Dialogue pour afficher le mot secret
     if (showWordDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -182,7 +148,7 @@ fun GameScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // En-tête avec informations et boutons
+            // En-tête
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,7 +189,7 @@ fun GameScreen(
                 }
             }
 
-            // Texte explicatif
+            // Instructions du jeu
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -256,7 +222,7 @@ fun GameScreen(
                 }
             }
 
-            // Ordre de passage des joueurs
+            // Liste d'ordre des joueurs
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -292,7 +258,6 @@ fun GameScreen(
                                     )
                                     .padding(8.dp)
                                     .clickable {
-                                        // Afficher la boîte de dialogue du mot secret
                                         selectedPlayer = player
                                         showWordDialog = true
                                     },
@@ -351,7 +316,7 @@ fun GameScreen(
                 }
             }
 
-            // Bouton pour aller au vote
+            // Bouton pour passer au vote
             Button(
                 onClick = {
                     scope.launch {

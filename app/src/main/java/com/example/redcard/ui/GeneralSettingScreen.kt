@@ -11,17 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.redcard.R
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.model.MusicPlayerManager
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
-
 @Composable
 fun GeneralSettingScreen(
     navController: NavController,
@@ -29,22 +26,18 @@ fun GeneralSettingScreen(
     themeViewModel: ThemeViewModel
 ) {
     val scope = rememberCoroutineScope()
-
-    // Observer l'état du thème
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    var notificationsEnabled by remember { mutableStateOf(true) }
-
     var themeExpanded by remember { mutableStateOf(false) }
 
-    // Initialiser selectedTheme selon le thème actuel
-    var selectedTheme by remember { mutableStateOf(
-        when (currentTheme) {
-            AppTheme.CLAIR -> "Clair"
-            AppTheme.SOMBRE -> "Sombre"
-            else -> "Système"
-        }
-    ) }
+    var selectedTheme by remember {
+        mutableStateOf(
+            when (currentTheme) {
+                AppTheme.CLAIR -> "Clair"
+                AppTheme.SOMBRE -> "Sombre"
+                else -> "Système"
+            }
+        )
+    }
 
     val themeOptions = listOf("Clair", "Sombre", "Système")
 
@@ -131,36 +124,9 @@ fun GeneralSettingScreen(
                     }
                 }
             )
-            // SettingDivider()
-
-            // // Notifications
-            // SettingItem(
-            //     icon = Icons.Default.Notifications,
-            //     title = "Notifications",
-            //     trailing = {
-            //         Switch(
-            //             checked = notificationsEnabled,
-            //             onCheckedChange = { notificationsEnabled = it }
-            //         )
-            //     }
-            // )
-            // SettingDivider()
-
-            // // Évaluer l'application
-            // SettingItem(
-            //     icon = Icons.Default.Favorite,
-            //     title = "Évaluer l'application",
-            //     titleColor = Color.Red,
-            //     onClick = {
-            //         // Rediriger vers Play Store
-            //     }
-            // )
         }
     }
 }
-
-
-
 
 @Composable
 fun SettingDivider() {
@@ -168,12 +134,10 @@ fun SettingDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 56.dp),
-        color = Color(0xFFE0E0E0), // Gris très clair
+        color = Color(0xFFE0E0E0),
         thickness = 1.dp
     )
 }
-
-
 
 @Composable
 private fun SettingItem(
@@ -200,7 +164,7 @@ private fun SettingItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = titleColor,
-                modifier = Modifier.size(28.dp) 
+                modifier = Modifier.size(28.dp)
             )
 
             Text(
@@ -215,5 +179,3 @@ private fun SettingItem(
         }
     }
 }
-
-

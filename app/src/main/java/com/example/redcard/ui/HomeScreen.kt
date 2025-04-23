@@ -1,6 +1,5 @@
 package com.example.redcard.ui
 
-import android.media.MediaPlayer
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -29,12 +28,10 @@ import kotlinx.coroutines.launch
 
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.model.MusicPlayerManager
-
 @Composable
 fun HomeScreen(
     navController: NavController,
     dataStoreManager: DataStoreManager,
-    modifier: Modifier = Modifier,
     onSettingsClick: () -> Unit = {},
     innerPadding: PaddingValues = PaddingValues(),
 ) {
@@ -44,11 +41,7 @@ fun HomeScreen(
     var showContinueDialog by remember { mutableStateOf(false) }
     val gameCompleted by dataStoreManager.gameCompletedFlow.collectAsState(initial = false)
     val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
-
-    // Ajout du scope de coroutine manquant
     val scope = rememberCoroutineScope()
-
-    // Musique de fond
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -60,12 +53,11 @@ fun HomeScreen(
     // Animation pour alterner la visibilité du texte
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000L) // Délai avant l'animation inverse
+            delay(1000L)
             isTextVisible = !isTextVisible
         }
     }
 
-    // Boîte de dialogue pour demander à l'utilisateur s'il souhaite continuer le jeu en cours
     if (showContinueDialog) {
         AlertDialog(
             onDismissRequest = { showContinueDialog = false },
@@ -77,21 +69,15 @@ fun HomeScreen(
                         showContinueDialog = false
                         scope.launch {
                             try {
-                                // Forcer un rafraîchissement des données avant de vérifier
                                 dataStoreManager.forceRefreshRegisteredPlayers()
 
                                 if (allPlayersRegistered) {
-                                    // Si tous les joueurs sont enregistrés, naviguer vers la page principale du jeu
                                     navController.navigate("ChoosePlayerBallScreen?refresh=true")
                                 } else {
-                                    // S'il manque des joueurs, continuer l'enregistrement
-                                    // Correction: complétez la navigation vers la page d'ajout de joueurs
                                     navController.navigate("PlayerSetupScreen")
                                 }
                             } catch (e: Exception) {
-                                // En cas d'erreur, naviguer vers un endroit sûr
                                 navController.navigate("ChooseConfigurationScreen") {
-                                    // Clear the back stack to prevent going back to the home screen
                                     popUpTo("home") { inclusive = true }
                                 }
                             }
@@ -101,17 +87,13 @@ fun HomeScreen(
                     Text("Continuer")
                 }
             },
-            // Bouton pour commencer une nouvelle partie
             dismissButton = {
                 Button(
                     onClick = {
                         showContinueDialog = false
                         scope.launch {
-                            // Réinitialiser le jeu avant de commencer une nouvelle partie
                             dataStoreManager.resetGame()
-                            // S'assurer que cette route existe
                             navController.navigate("gameConfiguration") {
-                                // Clear the back stack to prevent going back to the home screen
                                 popUpTo("home") { inclusive = true }
                             }
                         }
@@ -131,9 +113,7 @@ fun HomeScreen(
                 if (registeredPlayers.isNotEmpty() && !gameCompleted) {
                     showContinueDialog = true
                 } else {
-                    // Si aucun joueur enregistré ou partie terminée, aller directement à la configuration
                     navController.navigate("startingPage") {
-                        // Clear the back stack to prevent going back to the home screen
                         popUpTo("home") { inclusive = true }
                     }
                 }
@@ -156,7 +136,7 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Icône maison et icône settings
+            // En-tête avec icônes
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -164,7 +144,6 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Utilisation de Coil pour afficher le SVG
                 var showLanguageDialog by remember { mutableStateOf(false) }
 
                 if (showLanguageDialog) {
@@ -197,7 +176,6 @@ fun HomeScreen(
                         .size(40.dp)
                         .clickable {
                             onSettingsClick()
-                            // Vérifier que cette route existe
                             navController.navigate("generalSettings") {
                                 launchSingleTop = true
                             }
@@ -221,16 +199,16 @@ fun HomeScreen(
             // Texte avec animation de fondu progressif
             AnimatedVisibility(
                 visible = isTextVisible,
-                enter = fadeIn(animationSpec = tween(700)), // Apparition douce
-                exit = fadeOut(animationSpec = tween(700))  // Disparition douce
+                enter = fadeIn(animationSpec = tween(700)),
+                exit = fadeOut(animationSpec = tween(700))
             ) {
                 Text(
                     text = "APPUYEZ",
-                    fontSize = 30.sp, // Texte plus gros
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White, // Texte en blanc
-                    fontFamily = FontFamily(Font(R.font.rubik_medium_italic)), // Police Rubik
-                    modifier = Modifier.padding(top = 20.dp) // Spacer au-dessus du texte
+                    color = Color.White,
+                    fontFamily = FontFamily(Font(R.font.rubik_medium_italic)),
+                    modifier = Modifier.padding(top = 20.dp)
                 )
             }
         }

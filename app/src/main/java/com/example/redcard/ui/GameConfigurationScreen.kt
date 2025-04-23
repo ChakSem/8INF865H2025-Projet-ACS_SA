@@ -26,13 +26,12 @@ import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.RedCardTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
-
 @Composable
 fun ConfigurationScreen(navController: NavController, context: Context, themeViewModel: ThemeViewModel) {
     val dataStore = remember { DataStoreManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    // État initial avec 3 joueurs : 2 titulaires, 1 footix, 0 remplacant
+    // Configuration initiale des joueurs
     var players by remember { mutableStateOf(3) }
     var footix by remember { mutableStateOf(0) }
     var remplacants by remember { mutableStateOf(1) }
@@ -42,27 +41,23 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
         players - footix - remplacants
     }}
 
-    // Fonction pour ajuster les rôles avec la contrainte : plus de titu que de footix ou de remplaçant
+    // Fonction pour ajuster les rôles avec contraintes
     fun updateRoles(newFootix: Int, newRemplacants: Int) {
-        val total = newFootix + newRemplacants
         val minTitulaires = (players + 1) / 2  // Plus de titulaires que footix/remplaçants
 
-        // Vérifie si on essaie de mettre 0 footix et 0 remplacants → impossible
+        // Vérifications des contraintes
         if ((newFootix == 0 && newRemplacants == 0) || newFootix + newRemplacants > players - minTitulaires) {
             return
         }
 
-        // Vérifier que le total des footix + remplacants ne dépasse pas les titulaires
         if (newFootix >= 0 && newRemplacants >= 0 && newFootix + newRemplacants <= players - minTitulaires) {
             footix = newFootix
             remplacants = newRemplacants
         }
     }
 
-    // Obtenir le thème actuel via ThemeViewModel
+    // Gestion du thème
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminez si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
@@ -70,10 +65,8 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
     }
     val backgroundColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
-    val iconColor = if (darkTheme) Color.White else Color.Black // Icônes blanches si thème clair, sinon couleur par défaut
+    val iconColor = if (darkTheme) Color.White else Color.Black
 
-
-    // Appliquez le thème dynamique
     RedCardTheme(darkTheme = darkTheme) {
         Column(
             modifier = Modifier
@@ -82,7 +75,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Icône et titre
+            // En-tête avec navigation
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,7 +113,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 )
             }
 
-            // Compteur de joueurs
+            // Sélecteur de nombre de joueurs
             NumberSelector(
                 title = "Joueurs",
                 value = players,
@@ -129,17 +122,15 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 onValueChange = { newValue ->
                     if (newValue in 3..20) {
                         if (newValue > players) {
-                            // Ajout d'un joueur => ajoute un titulaire
+                            // Ajout d'un joueur = ajouter un titulaire
                             players = newValue
                         } else if (newValue < players) {
-                            // Retrait d'un joueur
+                            // Retrait de joueurs avec logique de priorité
                             val diff = players - newValue
                             for (i in 1..diff) {
                                 if (titulaires > footix + remplacants) {
-                                    // Si plus de titulaires que footix + remplacants, enlève un titulaire
                                     players--
                                 } else {
-                                    // Sinon, regarde les remplaçants et les footix
                                     if (remplacants == footix && remplacants > 0) {
                                         remplacants--
                                     } else if (remplacants > footix) {
@@ -168,12 +159,12 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                     .padding(bottom = 16.dp)
             )
 
-            // Titulaires - Pas de modification possible
+            // Affichage des titulaires (non modifiable directement)
             RoleDisplay(title = "Titulaire", value = titulaires)
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Remplaçant - Modification possible
+            // Sélecteur pour les remplaçants
             NumberSelector(
                 title = "Remplaçant",
                 value = remplacants,
@@ -188,7 +179,7 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Footix - Modification possible
+            // Sélecteur pour les footix
             NumberSelector(
                 title = "Footix",
                 value = footix,
@@ -201,20 +192,18 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                 }
             )
 
-
             Spacer(modifier = Modifier.weight(1f))
 
-            // Bouton Commencer
+            // Bouton pour commencer le jeu
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        // Sauvegarde les valeurs dans le DataStore avant de naviguer
+                        // Sauvegarde de la configuration
                         dataStore.savePlayers(players)
                         dataStore.saveTitulaires(titulaires)
                         dataStore.saveFootix(footix)
                         dataStore.saveRemplacants(remplacants)
 
-                        // Navigation vers la page suivante
                         navController.navigate("GameIntroductionScreen") {
                             popUpTo("GameIntroductionScreen") { inclusive = true }
                         }
@@ -230,13 +219,11 @@ fun ConfigurationScreen(navController: NavController, context: Context, themeVie
                     fontSize = 18.sp
                 )
             }
-
         }
     }
 }
 
-
-// Composant pour afficher les rôles non modifiables
+// Composant pour affichage en lecture seule
 @Composable
 fun RoleDisplay(
     title: String,
@@ -262,7 +249,7 @@ fun RoleDisplay(
     }
 }
 
-// Composant pour les sélecteurs de rôles modifiables
+// Composant pour sélection numérique
 @Composable
 fun NumberSelector(
     title: String,
@@ -288,18 +275,17 @@ fun NumberSelector(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Bouton pour diminuer
             IconButton(
                 onClick = { onValueChange(value - 1) },
                 enabled = value > 0 && (
-                        (title == "Footix" && (footix > 1 || remplacants > 0)) ||  // Footix peut être réduit si > 1 ou si remplaçant existe
-                                (title == "Remplaçant" && (remplacants > 1 || footix > 0)) ||  // Remplaçant peut être réduit si > 1 ou si footix existe
-                                (title != "Footix" && title != "Remplaçant")  // Si ce n'est pas un Footix/Remplaçant, autorise toujours
-                        )
-            )
-            {
+                        (title == "Footix" && (footix > 1 || remplacants > 0)) || 
+                        (title == "Remplaçant" && (remplacants > 1 || footix > 0)) || 
+                        (title != "Footix" && title != "Remplaçant")
+                )
+            ) {
                 Text(text = "-", fontSize = 20.sp)
             }
-
 
             Text(
                 text = value.toString(),
@@ -307,6 +293,7 @@ fun NumberSelector(
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
 
+            // Bouton pour augmenter
             IconButton(
                 onClick = { onValueChange(value + 1) }
             ) {
@@ -314,16 +301,4 @@ fun NumberSelector(
             }
         }
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun ConfigurationScreenPreview() {
-    val context = LocalContext.current
-    ConfigurationScreen(
-        navController = rememberNavController(),
-        context = context,
-        themeViewModel = ThemeViewModel()
-    )
 }

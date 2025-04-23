@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
-import com.example.redcard.data.Player
 import com.example.redcard.model.MusicPlayerManager
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
@@ -49,18 +48,16 @@ fun VictoryScreen(
     val scrollState = rememberScrollState()
     val musicEnabled by dataStoreManager.musicEnabledFlow.collectAsState(initial = true)
 
-    // Gestion du bouton retour arrière (Back)
+    // Gestion du retour arrière
     BackHandler {
-        // Naviguer vers l'écran de configuration du jeu
         navController.navigate("gameConfiguration") {
             popUpTo("victoryScreen") { inclusive = true }
         }
     }
 
-    // Récupérer les joueurs enregistrés
+    // Récupération et filtrage des joueurs par rôle
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
 
-    // Filtrer les joueurs par rôle
     val titulairePlayers = remember(registeredPlayers) {
         registeredPlayers.filter { it.role == "Titulaire" }
     }
@@ -73,27 +70,24 @@ fun VictoryScreen(
         registeredPlayers.filter { it.role == "Footix" }
     }
 
-    // Compter les imposteurs (Remplaçants + Footix)
+    // Décompte des imposteurs (Remplaçants + Footix)
     val impostorCount = remplacantPlayers.size + footixPlayers.size
 
-    // Déterminer les vainqueurs en fonction des joueurs restants
+    // Détermination des vainqueurs selon les joueurs restants
     val winners = when {
         titulairePlayers.isNotEmpty() && impostorCount == 0 -> "Les Titulaires"
         titulairePlayers.isEmpty() && remplacantPlayers.isNotEmpty() && footixPlayers.isEmpty() -> "Les Remplaçants"
         titulairePlayers.isEmpty() && remplacantPlayers.isEmpty() && footixPlayers.isNotEmpty() -> "Les Footix"
-        titulairePlayers.isEmpty() && impostorCount > 0 -> "Les Imposteurs" // Cas où les remplaçants ET footix restent
-        titulairePlayers.size == 1 && impostorCount == 1 -> "Les Imposteurs" // Cas spécial: 1 titu, 1 imposteur
+        titulairePlayers.isEmpty() && impostorCount > 0 -> "Les Imposteurs" // Cas mixte : remplaçants ET footix
+        titulairePlayers.size == 1 && impostorCount == 1 -> "Les Imposteurs" // Cas spécial: 1 titulaire vs 1 imposteur
         else -> "Personne"
     }
 
-    // Récupérer le mot secret des titulaires
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
-
-    // État pour afficher les détails du jeu
     var showDetails by remember { mutableStateOf(false) }
     val detailsIconRotation = animateFloatAsState(targetValue = if (showDetails) 180f else 0f)
 
-    // Fonction pour réinitialiser le jeu
+    // Fonction de réinitialisation complète du jeu
     fun resetGame() {
         scope.launch {
             dataStoreManager.resetGame()
@@ -103,30 +97,20 @@ fun VictoryScreen(
         }
     }
 
-    // Observer le thème actuel
+    // Configuration du thème
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminer si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
-        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
     }
 
     val backgroundColor = MaterialTheme.colorScheme.background
-    val textColor = MaterialTheme.colorScheme.onBackground
-    val iconColor = if (darkTheme) Color.White else Color.Black
 
+    // Effets de lancement
     LaunchedEffect(Unit) {
-        // Marquer la partie comme terminée
         dataStoreManager.markGameAsCompleted()
 
-        if (musicEnabled) {
-            MusicPlayerManager.playMusicVictory(context)
-        }
-    }
-    // Musique de fond
-    LaunchedEffect(Unit) {
         if (musicEnabled) {
             MusicPlayerManager.playMusicVictory(context)
         }
@@ -144,7 +128,7 @@ fun VictoryScreen(
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // En-tête avec le titre
+            // En-tête avec navigation et titre
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,11 +136,7 @@ fun VictoryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = {
-                        resetGame() // Utiliser resetGame pour s'assurer que tout est nettoyé
-                    }
-                ) {
+                IconButton(onClick = { resetGame() }) {
                     Icon(
                         imageVector = Icons.Filled.Home,
                         contentDescription = "Accueil",
@@ -170,11 +150,7 @@ fun VictoryScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                IconButton(
-                    onClick = {
-                        navController.navigate("generalSettings")
-                    }
-                ) {
+                IconButton(onClick = { navController.navigate("generalSettings") }) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Réglages",
@@ -183,7 +159,7 @@ fun VictoryScreen(
                 }
             }
 
-            // Carte de victoire
+            // Carte principale affichant le résultat
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,9 +167,7 @@ fun VictoryScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -202,7 +176,7 @@ fun VictoryScreen(
                     Icon(
                         imageVector = Icons.Filled.EmojiEvents,
                         contentDescription = "Trophée",
-                        tint = Color(0xFFFFD700), // Couleur or
+                        tint = Color(0xFFFFD700),
                         modifier = Modifier.size(80.dp)
                     )
 
@@ -217,7 +191,7 @@ fun VictoryScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Afficher le mot secret si disponible et si les titulaires ont gagné
+                    // Affichage conditionnel du mot secret selon les vainqueurs
                     if (winners == "Les Titulaires") {
                         titulaireWord?.let { word ->
                             Text(
@@ -230,7 +204,6 @@ fun VictoryScreen(
                         }
                     }
 
-                    // Si les imposteurs ont gagné, afficher un message spécial
                     if (winners == "Les Imposteurs") {
                         Text(
                             text = "Les Remplaçants et les Footix ont unis leurs forces !",
@@ -240,7 +213,6 @@ fun VictoryScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
 
-                        // Afficher aussi le mot secret des titulaires qu'ils ont réussi à éliminer
                         titulaireWord?.let { word ->
                             Text(
                                 text = "Le mot secret des titulaires était: $word",
@@ -254,7 +226,7 @@ fun VictoryScreen(
                 }
             }
 
-            // Afficher les joueurs restants
+            // Affichage des joueurs restants
             if (registeredPlayers.isNotEmpty()) {
                 Text(
                     text = "Joueurs restants:",
@@ -268,9 +240,7 @@ fun VictoryScreen(
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     items(registeredPlayers) { player ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             if (player.photoUri != null) {
                                 Image(
                                     painter = rememberAsyncImagePainter(model = player.photoUri),
@@ -310,7 +280,6 @@ fun VictoryScreen(
                                 modifier = Modifier.padding(top = 4.dp)
                             )
 
-                            // Afficher le rôle à la fin du jeu
                             Text(
                                 text = player.role,
                                 fontSize = 14.sp,
@@ -332,7 +301,7 @@ fun VictoryScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Section des détails avec animation
+            // Section de détails avec animation d'expansion
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -345,7 +314,6 @@ fun VictoryScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // En-tête des détails avec bouton pour afficher/masquer
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -370,7 +338,6 @@ fun VictoryScreen(
                         }
                     }
 
-                    // Contenu des détails avec animation
                     AnimatedVisibility(
                         visible = showDetails,
                         enter = expandVertically(),
@@ -382,7 +349,7 @@ fun VictoryScreen(
                                 .padding(top = 8.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
-                            // Afficher les statistiques de la partie
+                            // Statistiques de fin de partie
                             Text(
                                 text = "Nombre total de joueurs restants: ${registeredPlayers.size}",
                                 fontSize = 14.sp,
@@ -436,15 +403,13 @@ fun VictoryScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Bouton Rejouer - MODIFIÉ pour éviter le problème de navigation
+                // Bouton pour recommencer une partie
                 Button(
                     onClick = {
                         scope.launch {
-                            // Réinitialiser complètement le jeu avant de naviguer
                             dataStoreManager.resetGame()
                             MusicPlayerManager.playMusicSalon(context)
 
-                            // Utiliser popUpTo(0) pour effacer complètement la pile de navigation
                             navController.navigate("ChoosePlayerBallScreen") {
                                 popUpTo(0) { inclusive = true }
                             }
@@ -460,11 +425,9 @@ fun VictoryScreen(
                     Text(text = "Rejouer")
                 }
 
-                // Bouton Retour à l'accueil
+                // Bouton pour retourner à l'écran d'accueil
                 OutlinedButton(
-                    onClick = {
-                        resetGame()
-                    },
+                    onClick = { resetGame() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(

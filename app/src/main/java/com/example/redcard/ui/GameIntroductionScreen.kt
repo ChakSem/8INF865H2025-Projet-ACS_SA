@@ -16,16 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController // Import for rememberNavController
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.ThemeViewModel
 import com.example.redcard.data.DataStoreManager
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun GameIntroductionScreen(
@@ -36,10 +34,8 @@ fun GameIntroductionScreen(
     val dataStoreManager = remember { DataStoreManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Obtenir le thème actuel via ThemeViewModel
+    // Gestion du thème
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminez si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
@@ -87,14 +83,13 @@ fun GameIntroductionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = backgroundButton), // Use containerColor
+                colors = ButtonDefaults.buttonColors(containerColor = backgroundButton),
                 contentPadding = PaddingValues(16.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Continuer", color = Color.White, fontSize = 18.sp)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -115,13 +110,4 @@ fun GameIntroductionScreen(
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    val navController = rememberNavController() // Use rememberNavController()
-    GameIntroductionScreen(
-        navController = navController,
-        themeViewModel = ThemeViewModel())
 }

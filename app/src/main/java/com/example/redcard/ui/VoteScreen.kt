@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,7 +27,6 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.redcard.data.DataStoreManager
 import com.example.redcard.data.Player
-import com.example.redcard.model.TurnManager
 import com.example.redcard.data.dataStore
 import com.example.redcard.ui.theme.AppTheme
 import com.example.redcard.ui.theme.RedCardTheme
@@ -45,48 +43,16 @@ fun VoteScreen(
     val scope = rememberCoroutineScope()
     var selectedPlayer by remember { mutableStateOf<Player?>(null) }
 
-    // Récupérer les joueurs enregistrés
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
-
-    // Filtrer les joueurs pour le vote
     val eliminablePlayers = registeredPlayers
 
-    // Compter les joueurs par rôle
-    val titulaireCount = remember(registeredPlayers) {
-        registeredPlayers.count { it.role == "Titulaire" }
-    }
 
-    // Analyser les joueurs par rôle pour déterminer l'état du jeu
-    val footixCount = remember(registeredPlayers) {
-        registeredPlayers.count { it.role == "Footix" }
-    }
-
-    val remplacantCount = remember(registeredPlayers) {
-        registeredPlayers.count { it.role == "Remplaçant" }
-    }
-
-    // Compter les imposteurs (Remplaçants + Footix)
-    val impostorCount = remember(footixCount, remplacantCount) {
-        footixCount + remplacantCount
-    }
-
-    // Vérifier si le jeu peut continuer
-    val gameCanContinue = remember(titulaireCount, impostorCount) {
-        when {
-            titulaireCount == 0 || impostorCount == 0 -> false
-            titulaireCount == 1 && impostorCount == 1 -> false // Règle spéciale: 1 titu et 1 imposteur
-            else -> true
-        }
-    }
-
-    // Fonction pour éliminer un joueur et passer au tour suivant
+    // Fonction d'élimination d'un joueur sélectionné
     fun eliminatePlayer() {
         selectedPlayer?.let { player ->
             scope.launch {
-                // Créer une nouvelle liste sans le joueur sélectionné
                 val updatedPlayers = registeredPlayers.filter { it.id != player.id }
 
-                // Mettre à jour le DataStore
                 context.dataStore.edit { preferences ->
                     val playersJson = kotlinx.serialization.json.Json.encodeToString(
                         kotlinx.serialization.builtins.ListSerializer(Player.serializer()),
@@ -95,33 +61,29 @@ fun VoteScreen(
                     preferences[DataStoreManager.REGISTERED_PLAYERS_KEY] = playersJson
                 }
 
-                // Vérifier l'état du jeu après l'élimination
+                // Vérification des conditions de fin de partie après élimination
                 val newTitulaireCount = updatedPlayers.count { it.role == "Titulaire" }
                 val newFootixCount = updatedPlayers.count { it.role == "Footix" }
                 val newRemplacantCount = updatedPlayers.count { it.role == "Remplaçant" }
                 val newImpostorCount = newFootixCount + newRemplacantCount
 
-                // Cas de victoire
+                // Navigation vers l'écran de victoire si conditions remplies
                 if (newTitulaireCount == 0 || newImpostorCount == 0 || updatedPlayers.isEmpty() ||
                     (newTitulaireCount == 1 && newImpostorCount == 1)) {
-                    // Passage à l'écran de victoire
                     navController.navigate("victoryScreen")
                 } else {
-                    // Retour à l'écran de jeu
                     navController.navigate("gameScreen")
                 }
             }
         }
     }
 
-    // Observer le thème actuel
+    // Configuration du thème
     val currentTheme by themeViewModel.theme.collectAsState()
-
-    // Déterminer si le thème est sombre ou clair
     val darkTheme = when (currentTheme) {
         AppTheme.SOMBRE -> true
         AppTheme.CLAIR -> false
-        AppTheme.SYSTEME -> isSystemInDarkTheme() // Utiliser le thème système par défaut
+        AppTheme.SYSTEME -> isSystemInDarkTheme()
     }
 
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -136,7 +98,7 @@ fun VoteScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Row en haut avec la maison et les réglages
+            // En-tête avec navigation et titre
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -144,11 +106,7 @@ fun VoteScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = {
-                        navController.navigate("startingPage")
-                    }
-                ) {
+                IconButton(onClick = { navController.navigate("startingPage") }) {
                     Icon(
                         imageVector = Icons.Filled.Home,
                         contentDescription = "Accueil",
@@ -164,11 +122,7 @@ fun VoteScreen(
                     color = textColor
                 )
 
-                IconButton(
-                    onClick = {
-                        navController.navigate("generalSettings")
-                    }
-                ) {
+                IconButton(onClick = { navController.navigate("generalSettings") }) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Réglages",
@@ -178,7 +132,6 @@ fun VoteScreen(
                 }
             }
 
-            // Afficher le titre de l'écran
             Text(
                 text = "Sélectionnez un joueur à éliminer",
                 fontSize = 24.sp,
@@ -187,7 +140,7 @@ fun VoteScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Liste des joueurs pour le vote
+            // Liste des joueurs à éliminer
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,7 +165,6 @@ fun VoteScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Photo ou avatar du joueur
                             if (player.photoUri != null) {
                                 Image(
                                     painter = rememberAsyncImagePainter(model = player.photoUri),
@@ -271,7 +223,6 @@ fun VoteScreen(
                                 modifier = Modifier.weight(1f)
                             )
 
-                            // Indicateur de sélection
                             if (selectedPlayer?.id == player.id) {
                                 Icon(
                                     imageVector = Icons.Filled.CheckCircle,
@@ -284,7 +235,7 @@ fun VoteScreen(
                 }
             }
 
-            // Bouton de validation du vote
+            // Bouton d'élimination
             Button(
                 onClick = { eliminatePlayer() },
                 modifier = Modifier
@@ -307,21 +258,7 @@ fun VoteScreen(
                     fontWeight = FontWeight.Medium
                 )
             }
-
-            // Bouton pour passer l'élimination (optionnel)
-            TextButton(
-                onClick = {
-                    scope.launch {
-                        navController.navigate("gameScreen")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Passer cette élimination",
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            
         }
     }
 }

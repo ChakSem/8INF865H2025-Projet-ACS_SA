@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -42,7 +40,6 @@ fun ChoosePlayerBallScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Récupérer les données stockées
     val totalPlayers by dataStoreManager.playersFlow.collectAsState(initial = 3)
     val secretWords by dataStoreManager.secretWordsFlow.collectAsState(initial = emptySet())
     val registeredPlayers by dataStoreManager.registeredPlayersFlow.collectAsState(initial = emptyList())
@@ -50,11 +47,10 @@ fun ChoosePlayerBallScreen(
     val availableBalls by dataStoreManager.availableBallsFlow.collectAsState(initial = emptyMap())
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
-    // Récupérer les mots des titulaires et remplaçants
     val titulaireWord by dataStoreManager.titulaireWordFlow.collectAsState(initial = null)
     val remplacantWord by dataStoreManager.remplacantWordFlow.collectAsState(initial = null)
 
-    // Initialiser les mots du jeu si ce n'est pas déjà fait
+    // Initialisation des mots du jeu si nécessaire
     LaunchedEffect(Unit) {
         if (titulaireWord == null || remplacantWord == null) {
             val words = secretWords.toList().shuffled()
@@ -69,35 +65,29 @@ fun ChoosePlayerBallScreen(
     }
 
     LaunchedEffect(currentBackStackEntry) {
-        // Réinitialiser la photo quand on revient sur cet écran
         dataStoreManager.resetPlayerPhoto()
     }
     
-    // Créer une liste aplatie des ballons disponibles à partir de la map availableBalls
+    // Création d'une liste plate des ballons disponibles
     val availableRolesList = remember(availableBalls) {
         availableBalls.flatMap { (role, count) ->
-            List(count) { role } // Crée une liste plate avec chaque rôle répété selon sa disponibilité
-        }.shuffled() // On mélange pour que l'ordre ne soit pas prévisible
+            List(count) { role }
+        }.shuffled() // Mélange pour randomiser l'ordre
     }
 
-    // Effet pour gérer la navigation vers l'écran de jeu une fois tous les joueurs inscrits
+    // Navigation automatique quand tous les joueurs sont inscrits
     LaunchedEffect(allPlayersRegistered) {
         if (allPlayersRegistered) {
-            // Afficher un message pour confirmer que tous les joueurs sont inscrits
             Toast.makeText(
                 context,
                 "Tous les joueurs sont inscrits ! La partie va commencer.",
                 Toast.LENGTH_LONG
             ).show()
 
-            // Attendre un peu pour que les joueurs puissent voir le message
             delay(2000)
 
-            // Tous les joueurs sont inscrits, on peut passer à l'écran suivant
             navController.navigate("gameScreen") {
-                // Supprimer tous les écrans précédents de la pile
                 popUpTo(0) { inclusive = true }
-                // Make sure to have launchSingleTop to avoid duplicating the destination
                 launchSingleTop = true
             }
         }
@@ -131,7 +121,7 @@ fun ChoosePlayerBallScreen(
                 style = MaterialTheme.typography.headlineSmall
             )
 
-            // Afficher la liste des joueurs déjà inscrits
+            // Liste des joueurs déjà inscrits
             if (registeredPlayers.isNotEmpty()) {
                 Text(
                     text = "Joueurs inscrits:",
@@ -150,7 +140,7 @@ fun ChoosePlayerBallScreen(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
-            // Si aucun ballon n'est disponible mais que tous les joueurs ne sont pas inscrits
+            // Gestion des erreurs et affichage des ballons
             if (availableRolesList.isEmpty() && !allPlayersRegistered) {
                 Text(
                     text = "Erreur: Aucun ballon disponible. Veuillez reconfigurer les rôles.",
@@ -158,8 +148,6 @@ fun ChoosePlayerBallScreen(
                     color = MaterialTheme.colorScheme.error
                 )
             } else if (!allPlayersRegistered) {
-
-                // Afficher les ballons disponibles
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -169,18 +157,13 @@ fun ChoosePlayerBallScreen(
                     items(availableRolesList) { role ->
                         FootballBallButton(
                             role = role,
-                            isSelected = false, // Toujours false car la liste est déjà filtrée
+                            isSelected = false,
                             onClick = {
                                 scope.launch {
-                                    // Si le rôle est un footix, on ne définit pas de mot
-                                    if (role == "Footix") {
-                                        dataStoreManager.saveSelectedBall(null, role)
-                                    } else if (role == "Titulaire") {
-                                        // Si c'est un titulaire, on utilise le mot des titulaires
-                                        dataStoreManager.saveSelectedBall(titulaireWord, role)
-                                    } else if (role == "Remplaçant") {
-                                        // Si c'est un remplaçant, on utilise le mot des remplaçants
-                                        dataStoreManager.saveSelectedBall(remplacantWord, role)
+                                    when (role) {
+                                        "Footix" -> dataStoreManager.saveSelectedBall(null, role)
+                                        "Titulaire" -> dataStoreManager.saveSelectedBall(titulaireWord, role)
+                                        "Remplaçant" -> dataStoreManager.saveSelectedBall(remplacantWord, role)
                                     }
                                     navController.navigate("PlayerSetupScreen")
                                 }
@@ -217,7 +200,7 @@ fun RegisteredPlayerItem(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF2C65EA)) // Fond bleu
+                    .background(Color(0xFF2C65EA))
             ) {
                 Text(
                     text = player.name.first().toString(),
@@ -233,7 +216,6 @@ fun RegisteredPlayerItem(
         )
     }
 }
-
 
 @Composable
 fun FootballBallButton(
@@ -256,7 +238,7 @@ fun FootballBallButton(
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )
-            // Important : On affiche uniquement "Joueur" pour ne pas révéler le rôle
+            // Affiche "Joueur" pour masquer le rôle
             Text(
                 text = "Joueur",
                 style = MaterialTheme.typography.bodyMedium
