@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -176,10 +177,6 @@ fun PlayerSetupScreen(
             return
         }
 
-//        if (currentPhotoUri == null) {
-//            errorMessage = "Veuillez prendre une photo"
-//            return
-//        }
 
         isSubmitting = true
         errorMessage = null
@@ -220,8 +217,13 @@ fun PlayerSetupScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     if (currentBall != null) {
-                        Text("Ton mot secret est: $currentBall")
-                        Text("Mémorise-le bien et ne le montre à personne !")
+                        Text("Ton mot secret est:", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = "$currentBall",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+
+                        Text("\nMémorise-le bien et ne le montre à personne !")
                     } else {
                         Text("Tu est le Footix !")
                         Text("Tu dois deviner le mot secret des autres joueurs.")
